@@ -1,2 +1,7 @@
-# docs
-Documentation for Model Context Standard (MCS) 
+# Documentation for Model Context Standard (MCS) 
+
+Generated with [Docusaurus](https://docusaurus.io)
+
+
+
+
