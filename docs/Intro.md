@@ -26,11 +26,11 @@ Build a driver for REST-HTTP, EDI-AS2, Filesystem-localfs, CAN-Bus or even MCP-s
 ### Zero Custom Protocol Overhead
 Forget new stacks with bugs and auth nightmares. MCS leverages battle-tested standards first like OpenAPI, REST, OAuth for instant compatibility, easier auditing, more security, and seamless integration into existing toolchains.
 
-### Plug & Play Security
-Say goodbye to malicious servers (up to 8% on Github). MCS promotes sandboxed containers and explicit autostarts. Safer by design, no hidden risks. It utilizes existing software repositories for deployment, having built-in checksum verification inspired by apt or Maven for more trust already in mind. Also for prompts itself.
+### Prompt Encapsulation
+Drivers encapsulate optimized prompts. Refined and tested for reliability across models, including emerging ones like Kimi K2 with its advanced tool-calling strengths. As a client developer, you get hands-off simplicity. Just plug in the driver, and it handles the details. No need for manual prompt tuning on your side. It's future-proof too with potential dynamic hubs using checksums to auto-load updated, high-performance versions for new models. Invest once in perfection, reap benefits endlessly.
 
 ### Autostart? Mostly Unnecessary, but Optional and Done right
-MCP treats autostart as a "feature", but it is a design flaw. STDIO forces it, leading to unnecessary processes and risks. With MCS, you don't need it in 99% of cases. Interfaces are already available via existing transports (e.g., your favorite weather API or our mcs-driver-filesystem-localfs binds local systems directly). No more Wrapper Server spin ups needed.
+MCP treats autostart as a "feature", but it is a design flaw. STDIO forces it, leading to unnecessary processes and risks. With MCS, you don't need it in 99% of cases. Interfaces are already available via existing transports (e.g., your favorite weather API or our mcs-driver-filesystem-localfs binds local systems directly). No more Wrapper Server spin ups needed. Say goodbye to malicious servers (up to 8% on Github).
 
 ### Complementary to MCP, but Better
 MCP pioneered standardization, but MCS fixes its pitfalls. No mandatory wrappers and true modularity. It delivers the Plug & Play experience that MCP promised but rarely achieved without high effort. You Love MCP? No problem, wrap MCP Servers as MCS drivers for seamless migration (e.g. mcs-driver-mcp-stdio or mcs-driver-mcp-sse, share them and everyone can benefit without rewriting) .
