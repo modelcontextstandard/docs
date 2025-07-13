@@ -1,0 +1,10 @@
+{
+  "label": "3. Minimal Driver Contract",
+  "position": 3,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "doc",
+    "id": "Minimal_Driver_Contract"
+  }
+}

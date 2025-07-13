@@ -1,0 +1,10 @@
+{
+  "label": "Specification",
+  "position": 1,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "description": "This chapter introduces the basics of Generative AI, Prompting, Prompt Engineering, Chatbots, and more."
+  }
+}
