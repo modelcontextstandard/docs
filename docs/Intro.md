@@ -6,6 +6,7 @@ sidebar_position: 0
 # Model Context Standard (MCS)
 
 **Unlock the Power of LLMs: A lightweight standard for connecting LLMs to external systems through reusable drivers, not wrappers or bloated protocols**
+
 Connecting LLMs to external systems is still harder than it should be. Most current solutions rely on custom wrappers or complex function-calling protocols that require heavy infrastructure and manual parsing. MCS offers a simpler alternative.
 
 MCS treats integration as a driver problem. Just like operating systems use device drivers, LLMs can use interface drivers to connect to APIs, tools, databases or devices. Instead of writing custom glue code, you configure reusable drivers based on existing standards like OpenAPI and REST. These drivers translate between your LLM’s language output and actionable operations.
@@ -129,7 +130,7 @@ MCP creates a new protocol stack on top of JSON-RPC, essentially reimplementing 
 - New security vulnerabilities: Recent discoveries show the risks of custom protocol implementations  [2](https://thehackernews.com/2025/07/critical-vulnerability-in-anthropics.html), [3](https://www.oligo.security/blog/critical-rce-vulnerability-in-anthropic-mcp-inspector-cve-2025-49596), [4](https://thejournal.com/articles/2025/07/08/report-finds-agentic-ai-protocol-vulnerable-to-cyber-attacks.aspx), [5](https://noailabs.medium.com/mcp-security-issues-emerging-threats-in-2025-7460a8164030), [6](https://www.redhat.com/en/blog/model-context-protocol-mcp-understanding-security-risks-and-controls) et al.
 - Additional complexity: Developers must learn new patterns instead of leveraging existing HTTP knowledge
 - New Tooling: You can not simply reuse what you build with MCP
-- 
+
 **The irony:** What you can accomplish with MCP, you can already do with REST over HTTP using battle-tested security, established tooling, and decades of optimization.
 
 ### The Wrapper Server Multiplication
@@ -235,7 +236,7 @@ MCP pioneered the concept, but MCS makes it practical. While MCP requires rebuil
 
 | Aspect | MCP | MCS |
 |--------|-----|-----|
-| **Protocol** | Custom JSON-RPC stack | Standard HTTP/OpenAPI |
+| **Protocol** | Custom JSON-RPC stack | Standards like HTTP/OpenAPI |
 | **Server Architecture** | Wrapper server per API | Direct API connection |
 | **Autostart** | Required via STDIO | Optional, containerized |
 | **Authentication** | Custom implementation | Standard OAuth/JWT/API keys |
@@ -243,7 +244,7 @@ MCP pioneered the concept, but MCS makes it practical. While MCP requires rebuil
 | **Prompt Engineering** | App developer responsibility | Built into drivers |
 | **Reusability** | API-specific servers | Universal protocol drivers |
 | **Security Model** | New attack surfaces | Proven HTTP security |
-| **Tooling** | Custom debugging/monitoring | Standard HTTP tools |
+| **Tooling** | Custom debugging/monitoring | Standard tools can be used |
 | **Integration Effort** | High (wrapper + client code) | Low (configure driver) |
 
 
