@@ -3,6 +3,9 @@ title: 1. MCS Motivation Overview
 sidebar_position: 1
 ---
 
+**Key Insight:** MCS recognizes that successful LLM integration is not about building new protocols or frameworks, but about standardizing how we describe and execute the bridge between an LLM's text output and existing systems. The effectiveness of any integration ultimately depends on the model's capabilities and the quality of prompts, not the complexity of the tooling.
+
+
 # 1 · MCS Motivation Overview
 
 LLMs are token predictors. They consume and produce sequences of tokens that are rendered as text via a tokenizer. This means text is the only interface an LLM has to interact with its environment. It cannot execute anything directly.
@@ -16,8 +19,8 @@ To enable execution, you need a parser. The parser takes the LLM’s output, ide
 > The process involves:
 > 1. Providing the LLM with function schemas/descriptions 
 > 2. The LLM generates a structured call in response to user queries
-> 3. A parser extracts and validates the function call
-> 4. The system executes the call against the target API/service
+> 3. A parser determines, extracts and validates the function call
+> 4. The parser executes the call against the target API/service
 > 5. Results are returned to continue the conversation
 >
 > This pattern allows LLMs to act as intelligent orchestrators using text alone. The exact format of the function description doesn't matter. What matters is that the LLM understands when and how to call a tool and how to format the output for the parser.
@@ -26,9 +29,11 @@ This concept was formalized in [TALM: Tool Augmented Language Models](https://ar
 
 Modern AI frameworks often provide parsers, but not standardized descriptions or callable functions. This leads to a fragmented landscape of custom tooling where developers repeatedly reinvent the same logic for each application.
 
-The Model Context Protocol (MCP) addressed this by introducing the first open standard to connect LLMs with external systems. OpenAI followed a similar idea with "Actions" for Custom GPTs long before that, but never published it as a general concept.
+The Model Context Protocol (MCP) addressed this by introducing the first open standard to connect LLMs with external systems. OpenAI followed a similar idea with "Plugins" (discontinued) and "Actions" for Custom GPTs long before that, but never published it as a general concept.
 
-However, MCP added a full protocol stack, along with new complexity and security implications. As of 2025, recent updates to MCP include OAuth Resource Servers, mandatory Resource Indicators (RFC 8707), and streamable HTTP as a new transport mechanism (released March 2025). Despite these advancements, critiques highlight ongoing issues like prompt injection weaknesses (reported May 2025) and vulnerabilities such as CVE-2025-49596 (RCE in MCP Inspector, June 2025). Much of the effort that followed focused on building wrappers around APIs that could already be used directly by LLMs, as demonstrated in the MCS proof of concept.
+However, MCP added a full protocol stack, along with new complexity and security implications. As of 2025, recent updates to MCP include OAuth Resource Servers, mandatory Resource Indicators (RFC 8707), and streamable HTTP as a new transport mechanism (released March 2025). Despite these advancements, critiques highlight ongoing issues like prompt injection weaknesses (reported May 2025) and vulnerabilities such as CVE-2025-49596 (RCE in MCP Inspector, June 2025). 
+
+Much of the effort that followed focused on building wrappers around APIs that could already be used directly by LLMs, as demonstrated in the MCS proof of concept.
 
 Critically, MCP often reimplements features the web has solved decades ago. Take authentication: instead of relying on proven standards like Basic Auth, OAuth2, or API Keys over HTTPS, MCP introduces its own way, all while using JSON-RPC under the hood. This adds layers of complexity with little gain.
 
@@ -46,4 +51,6 @@ The parser is the other half of the equation. It bridges the LLM’s output to r
 
 Previously, function implementations were written from scratch for every use case. But with MCS generalization is key. If a REST call works for one service, it can be reused for all REST-over-HTTP services.
 
-An MCS Driver does exactly that. It generalizes function calling for a given protocol over a specific transport layer.
+MCS generalizes function calling for a given protocol over a specific transport layer in one driver.
+
+
