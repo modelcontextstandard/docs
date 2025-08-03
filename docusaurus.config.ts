@@ -119,7 +119,7 @@ const config: Config = {
           items: [
             {
               label: 'Imprint',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              href: 'https://www.dannygerst.de/impressum/',
             },
             {
               label: 'Github',

@@ -1,0 +1,10 @@
+{
+  "label": "9 · LLM Prompt Patterns",
+  "position": 9,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "doc",
+    "id": "LLM_Prompt_Patterns"
+  }
+}
