@@ -176,6 +176,11 @@ This creates several problems:
 - Resource waste: Unnecessary processes consuming CPU and memory
 - Security multiplication: More servers mean more attack surfaces
 
+This is not just our assessment. Prominent voices in the developer community have reached the same conclusion:
+
+- *"Stop Converting Your REST APIs to MCP"* [7](https://www.jlowin.dev/blog/stop-converting-rest-apis-to-mcp) argues that auto-wrapping REST APIs poisons AI agents with human-oriented granularity, polluting context and compounding tool-choice errors.
+- *"Stop Generating MCP Servers from REST APIs!"* [8](https://www.kylestratis.com/posts/stop-generating-mcp-servers-from-rest-apis/) shows that five chained REST calls with 95% individual accuracy drop overall success to ~77%, costing roughly 7x more tokens than a single purpose-built tool.
+
 ### The Autostart Security Risk
 MCP's STDIO-based autostart spawns processes with user privileges, creating potential security vulnerabilities:
 
@@ -183,7 +188,7 @@ MCP's STDIO-based autostart spawns processes with user privileges, creating pote
 - Process bloat: Background processes running even when not needed
 - Privilege escalation risks: One compromised server can affect the entire system
 
-Research suggests up to 8% of MCP servers on GitHub contain potentially malicious code [1](https://blog.virustotal.com/2025/06/what-17845-github-repos-taught-us-about.html).
+Research suggests up to 8% of MCP servers on GitHub contain potentially malicious code [1](https://blog.virustotal.com/2025/06/what-17845-github-repos-taught-us-about.html). Enterprise security experts echo these concerns: an analysis found 88% of MCP servers require credentials, with 53% relying on static, long-lived secrets. The conclusion: *"stdio-based MCP servers break nearly every enterprise security pattern"* [9](https://blog.christianposta.com/mcp-should-be-remote/).
 
 ### The Development Burden
 For every MCP client developer:

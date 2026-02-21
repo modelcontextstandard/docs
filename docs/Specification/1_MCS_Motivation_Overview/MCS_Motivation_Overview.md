@@ -33,7 +33,7 @@ The Model Context Protocol (MCP) addressed this by introducing the first open st
 
 However, MCP added a full protocol stack, along with new complexity and security implications. As of 2025, recent updates to MCP include OAuth Resource Servers, mandatory Resource Indicators (RFC 8707), and streamable HTTP as a new transport mechanism (released March 2025). Despite these advancements, critiques highlight ongoing issues like prompt injection weaknesses (reported May 2025) and vulnerabilities such as CVE-2025-49596 (RCE in MCP Inspector, June 2025). 
 
-Much of the effort that followed focused on building wrappers around APIs that could already be used directly by LLMs, as demonstrated in the MCS proof of concept.
+Much of the effort that followed focused on building wrappers around APIs that could already be used directly by LLMs, as demonstrated in the MCS proof of concept. This wrapper anti-pattern is increasingly recognized in the community [8](https://www.jlowin.dev/blog/stop-converting-rest-apis-to-mcp) [9](https://www.kylestratis.com/posts/stop-generating-mcp-servers-from-rest-apis/).
 
 Critically, MCP often reimplements features the web has solved decades ago. Take authentication: instead of relying on proven standards like Basic Auth, OAuth2, or API Keys over HTTPS, MCP introduces its own way, all while using JSON-RPC under the hood. This adds layers of complexity with little gain.
 
