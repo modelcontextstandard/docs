@@ -15,6 +15,7 @@ sidebar_position: 12
 - **Autostart recommendation (container labels, health endpoints)**: Expand with virtualization mandates (e.g., Docker params, sandboxing rules) and startup guidelines; define how drivers signal needs (e.g., via metadata). SDKs provide reference frameworks for launching.
 - **Explore a Prompt Provider for dynamic loading**: Add informative section on future extensions for external prompt overrides/loading (e.g., via URLs/registries); define override semantics in init. Prototype in SDKs before standardizing.
 - **Hybrid driver-orchestrator patterns**: Clarify in spec how drivers can implement both MCSDriver and MCSToolDriver interfaces for versatility; provide guidelines on when to use hybrids. SDKs offer examples.
+- **Raw source spec access**: Should drivers expose the *original* unprocessed source specification (e.g. the raw OpenAPI file before any reduction or transformation)? Currently `get_function_description` returns whatever the driver has prepared, which may be reduced, reformatted, or generated from `Tool` objects. A capability like `"raw_spec"` could signal that the original source is available, but no concrete use case has been identified yet. If needed, this could be modeled as a mixin or a method on `DriverMeta`.
 
 ### Package Naming Convention & Registry (for review)
 

@@ -216,7 +216,7 @@ MCS addresses these pain points by recognizing that this is fundamentally a driv
 
 MCS trims function calling down to two building blocks:
 
-- **Spec:** Machine-readable function descriptions (OpenAPI, JSON-Schema, ...) -- use standards if possible!
+- **Spec:** Machine-readable function descriptions -- use standards if possible! OpenAPI, JSON Schema, GraphQL SDL, WSDL, gRPC/Protobuf, OpenRPC, EDIFACT/X12, or custom formats.
 - **Bridge:** Transport layers (HTTP, AS2, CAN, ...) -- handled by parsers.
 
 Just like operating systems use device drivers to communicate with hardware, LLMs need interface drivers to communicate with external systems. 

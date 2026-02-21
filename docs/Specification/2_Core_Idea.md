@@ -10,8 +10,8 @@ sidebar_position: 2
 
 Every MCS driver must implement **two mandatory capabilities**:
 
-1. **Expose**: Provide a machine-readable *function description* via `get_function_description()` and usage instructions (including function description) via `get_driver_system_message()`. This allows the LLM to discover available tools and learn how to call them effectively. While `get_function_description()` is optional for LLMs that natively handle specs like OpenAPI (e.g., ChatGPT), `get_driver_system_message()` is preferred. It delivers a complete, pre-optimized system prompt tailored by the driver author, freeing clients from prompt engineering and ensuring high-quality, reusable prompts that evolve over time.
-2. **Execute**: Handle structured LLM-emitted calls via `process_llm_response()`. The driver parses the request, routes it through a bridge (HTTP, serial, message bus, etc.), and returns the raw result.
+1. **Expose**: Provide a machine-readable function description via `get_function_description()` and a ready-to-use system prompt via `get_driver_system_message()`. The system prompt wraps the function description with model-specific prompt guidance. `get_function_description()` gives the app developer the choice to build their own prompt instead (see Section 3 for why both are required, while only one would be mandatory).
+2. **Execute**: Handle structured LLM-emitted calls via `process_llm_response()`, which returns a `DriverResponse` containing the result and execution status. The driver parses the request, routes it through a bridge (HTTP, serial, message bus, etc.), and returns the raw result.
 
 The complexity of a **MCS Driver** is mostly concentrated in the execution phase. Everything related to authentication, rate-limiting, retries, logging, or protocol-specific quirks is handled internally by the driver using existing transports and if available machine readable standard specs like OpenAPI.
 
@@ -19,7 +19,7 @@ Drivers are initialized with configuration parameters through the constructor. T
 
 Optional or advanced functionality can be added modularly via *capabilities*, allowing drivers to remain lightweight by default.
 
-The **client** acts as a coordinator. It retrieves the function specification from the driver, injects it into the LLM system message, and later passes the LLM’s output back to the driver for inspection, if an execution of a function is wanted by the LLM. 
+The **client** acts as a coordinator. It retrieves the function specification from the driver, injects it into the LLM system message, and later passes the LLM's output back to the driver for inspection, if an execution of a function is wanted by the LLM.
 
 Importantly, the client does not need to know how the driver works internally, which technology stack it uses or what prompts should be used.
 
@@ -37,7 +37,7 @@ This separation allows ToolDrivers to focus on technical bridging, while Orchest
 ### Phase A – Spec exposure
 
 ```
- Client ─── request spec ───▶  Driver                
+ Client ─── request spec ───▶  Driver
   ▲                              │
   └─── Spec (OpenAPI …) ◄────────┘
 ```
@@ -58,7 +58,7 @@ LLM ──► JSON call ──► Driver/Parser ──► External API
  └─────────── Result ◄───────┘
 ```
 
-Once the LLM emits a structured function call (typically as a JSON object in the text output), the client passes this to the driver’s `process_llm_response()` method.
+Once the LLM emits a structured function call (typically as a JSON object in the text output), the client passes this to the driver's `process_llm_response()` method.
 
 The driver parses the call, dispatches it over its bridge (e.g. HTTP, CAN-Bus, AS2), and returns the raw result. The result can then be forwarded back into the conversation, either directly or via formatting logic handled elsewhere.
 
@@ -70,26 +70,25 @@ In practice, a single user request may require multiple tool calls before the LL
 
 ```
                     ┌───────────────────────────────────────────┐
-                    │                                             ▼
-User ──► Client ──► LLM ──► process_llm_response ──► call_executed?
+                    │                                           ▼
+User ──► Client ──► LLM ──► process_llm_response() ──► DriverResponse
                      ▲              │                       │
-                     │          result               call_failed?
+                     │       response.result      response.call_executed?
                      │              │                  │         │
-                     └──────────────┘           retry     no match
+                     └──────────────┘                retry     no match
                                                        │         │
-                                              get_retry_prompt  Final answer
-                                                       │
-                     ┌─────────────────────────────┘
-                     │
+                                       response.retry_prompt  Final answer
+                                                        │
+                     ┌──────────────────────────────────┘
                      ▼
 ```
 
 1. The client sends the conversation (system prompt + message history) to the LLM.
-2. The LLM responds. The client passes the response to `process_llm_response()`.
-3. If `call_executed` is true: the client appends the LLM message and the tool result to the conversation history and returns to step 1.
-4. If `call_failed` is true: the driver found a tool-call signature but could not parse or execute it. The client appends `get_retry_prompt()` to the conversation so the LLM can correct its output, then returns to step 1.
-5. If neither flag is set: no tool call was detected. The LLM’s response is the final answer for the user.
+2. The LLM responds. The client passes the response to `process_llm_response()`, which returns a `DriverResponse`.
+3. If `response.call_executed` is true: the client appends the LLM message and `response.result` to the conversation history and returns to step 1.
+4. If `response.call_failed` is true: the driver found a tool-call signature but could not parse or execute it. The client appends `response.retry_prompt` to the conversation so the LLM can correct its output, then returns to step 1.
+5. If neither flag is set: no tool call was detected. `response.result` is the final answer for the user.
 
-The per-call state (`call_executed`, `call_failed`, `last_call_detail`) is reset at the start of every `process_llm_response()` invocation. The driver does not track conversation history – that remains the client’s responsibility. This keeps the driver contract simple while allowing arbitrarily complex multi-step interactions.
+The driver is **stateless** -- all outcome information lives in the returned `DriverResponse`. The driver does not track conversation history; that remains the client's responsibility. This keeps the driver contract simple while allowing arbitrarily complex multi-step interactions.
 
 A Proof of Concept with existing ChatModels can be found [here](https://github.com/modelcontextstandard#getting-started-experience-the-wow-moment-in-2-minutes).

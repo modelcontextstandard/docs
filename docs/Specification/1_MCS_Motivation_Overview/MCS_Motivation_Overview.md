@@ -53,4 +53,17 @@ Previously, function implementations were written from scratch for every use cas
 
 MCS generalizes function calling for a given protocol over a specific transport layer in one driver.
 
+MCS follows a standard-first principle: if an established specification format exists, use it. Drivers can work with any machine-readable format, for example:
+
+* OpenAPI (JSON/YAML) -- RESTful APIs
+* JSON Schema -- structured input/output validation, CLI tools, message formats
+* GraphQL SDL -- GraphQL-based APIs
+* WSDL -- SOAP and legacy enterprise services
+* gRPC / Protocol Buffers -- high-performance binary APIs
+* OpenRPC -- JSON-RPC APIs
+* EDIFACT/X12 schemas -- EDI-based B2B interfaces
+* Custom formats -- when no standard applies
+
+MCS does not prescribe a format -- it prescribes the driver contract.
+
 
