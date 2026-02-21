@@ -6,6 +6,7 @@ sidebar_position: 2
 # MCS Driver Contract – Version 0.4
 
 This document defines the minimal contract all MCS-compatible drivers must implement.
+See [Minimal Driver Contract](Minimal_Driver_Contract.md) for detailed descriptions of each method, the stateless design rationale, and the `DriverResponse` semantics.
 
 The syntax is language-agnostic and intended to guide implementations across all runtimes.
 
@@ -41,18 +42,6 @@ abstract class MCSDriver {
     abstract process_llm_response(llm_response: string) -> DriverResponse
 }
 ```
-
-**The driver is stateless.** All per-call outcome information is returned inside the `DriverResponse` object. The driver holds no mutable state between calls. This makes drivers thread-safe by design and eliminates any ambiguity about which call a status flag refers to.
-
-**`DriverResponse` carries three possible outcomes:**
-
-| `call_executed` | `call_failed` | Meaning |
-|---|---|---|
-| `true` | `false` | Tool call was found and successfully executed. `result` contains the tool output. |
-| `false` | `true` | Tool-call signature found but could not be parsed or executed. `result` is the unchanged input. `call_detail` and `retry_prompt` may be set. |
-| `false` | `false` | No tool call detected. `result` is the unchanged input. |
-
-**`retry_prompt`:** A driver-authored prompt hint that the client can append to the conversation when `call_failed` is true. This keeps prompt knowledge inside the driver. The client never needs to understand why the call failed or how to fix it.
 
 ### ToolDriver (for Orchestration)
 
