@@ -121,7 +121,7 @@ This is exactly the simplicity that MCS formalizes. A driver packages the spec, 
 
 ## How It Works: The Conversation Loop
 
-In a real application the client, the LLM and one or more drivers interact in a loop. The driver stays stateless; the client manages the conversation:
+In a real application the client, the LLM and one or more drivers interact in a loop. The driver is **stateless** -- all outcome information is returned inside a `DriverResponse` object:
 
 ```mermaid
 sequenceDiagram
@@ -138,17 +138,18 @@ sequenceDiagram
         Client->>LLM: messages (system + history)
         LLM-->>Client: response (text or tool call)
         Client->>Driver: process_llm_response(response)
-        alt tool was called
-            Driver-->>Client: tool result
-            Note over Client: append result to history
-        else no tool call
-            Driver-->>Client: unchanged response
-            Client-->>User: final answer
+        Driver-->>Client: DriverResponse
+        alt response.call_executed
+            Note over Client: append response.result to history
+        else response.call_failed
+            Note over Client: append response.retry_prompt
+        else no match
+            Client-->>User: response.result (final answer)
         end
     end
 ```
 
-The driver never talks to the LLM directly. It only provides the spec and executes calls. This separation keeps the contract minimal: new transports and protocols only need a driver, not changes to the client or the LLM integration.
+The driver never talks to the LLM directly. It only provides the spec and executes calls. Because the driver holds no mutable state, it is thread-safe by design. New transports and protocols only need a driver, not changes to the client or the LLM integration.
 
 
 ## Why MCS exists: The Problem with Current Solutions

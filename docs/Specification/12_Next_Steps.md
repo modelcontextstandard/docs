@@ -8,7 +8,7 @@ sidebar_position: 12
 ## Core Standard Enhancements (Define in Spec for Consistency Across SDKs)
 - **Finalize JSON-Schema for `DriverMeta` and capability flags**: This ensures metadata is machine-validatable, promoting interoperability. Include schemas for Bindings, Tools, and ToolParameters to standardize serialization/deserialization.
 - **Decide if sync/async drivers are needed**: Specify optional async semantics in the standard (e.g., for I/O-heavy bridges); define when to use (e.g., streaming responses). SDKs handle language idioms (e.g., async/await in Python).
-- ~~**Clear signaling in `process_llm_response` for call occurrence**~~: **Resolved in v0.3** -- per-call state flags `call_executed`, `call_failed`, `last_call_detail` and the `get_retry_prompt()` method now provide deterministic signaling without return-type changes. See Section 3.
+- ~~**Clear signaling in `process_llm_response` for call occurrence**~~: **Resolved in v0.4** -- `process_llm_response` now returns a `DriverResponse` object that carries `result`, `call_executed`, `call_failed`, `call_detail`, and `retry_prompt`. The driver itself is fully stateless and thread-safe. See Section 3.
 - **Exception handling and error reporting vs. return values in error cases**: Define what clients expect (e.g., structured error objects with codes/messages for failures, raw results on success); SDKs adapt to language-specific exceptions/logging.
 - **Should the output from `process_llm_response()` really be ANY or a structured object?**: Mandate a minimal envelope (e.g., JSON with ```{ "result": any, "status": int, "error": string? }```) for metadata like status codes; keeps flexibility while ensuring parseability. SDKs can add type safety.
 - **Driver versioning, registries, dynamic loading for true Plug & Play and max security**: Outline guidelines in the spec (e.g., semver rules, registry discovery protocols, checksum requirements); include autoloading via names/checksums. SDKs implement loading mechanics (e.g., Pip integration).
@@ -48,6 +48,16 @@ mcs-orchestrator-<strategy>[-<variant>]            # Orchestrators
 **Language-specific conventions are SDK responsibility:**
 
 The specification defines the *logical* naming structure (`mcs-driver-<protocol>-<transport>[-<variant>]`), but each language ecosystem must solve discovery through its own SDK and existing package infrastructure. The goal: drivers must be discoverable and installable *without* a central MCS registry from day one. For Python, this means PyPI prefix search; for TypeScript, npm scoped packages or prefix conventions; for Go, module paths; and so on. Each SDK documents its own convention. A central registry (`mcs-pkg`) may complement these later, but must never be a prerequisite.
+
+**SDKs define three naming levels**, not just one:
+
+| Level | Spec defines | SDK defines |
+|---|---|---|
+| **Package manager** | Logical prefix `mcs-driver-<protocol>-<transport>` | Mapping to ecosystem (PyPI, npm, crates.io, ...) |
+| **Import / module path** | — | Language-idiomatic import convention for IDE autocompletion |
+| **Class / file naming** | — | Internal structure and naming rules for code navigation |
+
+The spec only governs the first level (the logical prefix). The import convention and file layout are SDK-internal decisions -- but they are equally important because they determine how developers *find and use* drivers in their IDE. Predictable import paths enable autocompletion: typing `from mcs.drivers.` in Python lists all installed drivers; typing `import { } from "mcs-driver-rest-http"` in TypeScript does the same. Each SDK must document its full naming stack (package manager name → import path → class/file names) so that all three levels are consistent and discoverable.
 
 **Open questions:**
 
