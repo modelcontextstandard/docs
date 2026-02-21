@@ -26,6 +26,30 @@ If no call is detected, `result` contains the unchanged input for chaining.
 
 *The exact signatures are up to each SDK. The semantics **must** match.*
 
+### Why three methods instead of two?
+
+Strictly, the MCS paradigm only requires two functions: a system prompt and a response processor. `get_function_description` is an intentional addition that forces driver developers to separate the function specification (data) from the system prompt (prompt logic). Without this separation, drivers would tightly couple spec and prompt, removing the AI application developer's ability to customize.
+
+`get_driver_system_message` typically calls `get_function_description` internally and wraps the result in prompt guidance tailored for the target LLM. But the app developer can also call `get_function_description` directly and build an entirely different system prompt around it.
+
+Together with the ToolDriver interface (see below), this creates a spectrum of control:
+
+| Level | What you get | Control |
+|---|---|---|
+| `get_driver_system_message(model_name?)` | Ready-to-use system prompt | Convenience -- driver handles everything |
+| `get_function_description(model_name?)` | Machine-readable spec string | Middle ground -- own prompt, driver-prepared spec |
+| `MCSToolDriver.list_tools()` | Structured `Tool` objects | Maximum -- choose tools, format, prompt freely |
+
+### `model_name` parameter
+
+Both `get_function_description` and `get_driver_system_message` accept an optional `model_name`:
+
+- Different LLMs process different formats with varying effectiveness. For example, some models handle XML structures better than JSON, while others are optimized for JSON function-calling syntax.
+- `get_function_description(model_name)` allows the driver to render the same underlying spec in the most effective format for a given model (XML, JSON, simplified text, etc.).
+- `get_driver_system_message(model_name)` allows model-specific prompt wording (format hints, few-shot examples, JSON schema constraints).
+- For small models, model-specific optimization can meaningfully improve tool-call accuracy.
+- When `model_name` is `null`, the driver returns a generic format that works across models. This is the common case.
+
 
 ### 3.1 `get_function_description(model_name?)`
 

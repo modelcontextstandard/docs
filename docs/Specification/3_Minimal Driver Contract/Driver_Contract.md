@@ -36,9 +36,9 @@ struct DriverResponse {
 abstract class MCSDriver {
     meta: DriverMeta
 
-    abstract get_function_description(model_name?: string) -> string  // Machine-readable spec
+    abstract get_function_description(model_name?: string) -> string
 
-    abstract get_driver_system_message(model_name?: string) -> string  // Full system prompt
+    abstract get_driver_system_message(model_name?: string) -> string
 
     abstract process_llm_response(llm_response: string) -> DriverResponse
 }
@@ -53,8 +53,6 @@ abstract class MCSDriver {
 | `true` | `false` | Tool call was found and successfully executed. `result` contains the tool output. |
 | `false` | `true` | Tool-call signature found but could not be parsed or executed. `result` is the unchanged input. `call_detail` and `retry_prompt` may be set. |
 | `false` | `false` | No tool call detected. `result` is the unchanged input (final answer). |
-
-**(Optional) Internal self-healing:** Before returning `call_failed = true`, the driver should attempt any configured self-healing patterns (e.g. fixing known model-specific formatting errors). Only if self-healing also fails does the driver signal the failure via the response.
 
 **`retry_prompt`:** A driver-authored prompt hint that the client can append to the conversation when `call_failed` is true. This keeps prompt knowledge inside the driver. The client never needs to understand why the call failed or how to fix it.
 
@@ -99,7 +97,7 @@ class BasicOrchestrator extends MCSDriver {
 
     get_driver_system_message(model_name?: string) -> string  // Build prompt
 
-    process_llm_response(llm_response: string) -> any  // Parse, find tool, execute
+    process_llm_response(llm_response: string) -> DriverResponse  // Parse, find tool, execute
 }
 ```
 
