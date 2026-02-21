@@ -1,9 +1,9 @@
 ---
-title: 12. Next Steps
-sidebar_position: 12
+title: 13. Next Steps
+sidebar_position: 13
 ---
 
-# 12 · Next Steps
+# 13 · Next Steps
 
 ## Core Standard Enhancements (Define in Spec for Consistency Across SDKs)
 - **Finalize JSON-Schema for `DriverMeta` and capability flags**: This ensures metadata is machine-validatable, promoting interoperability. Include schemas for Bindings, Tools, and ToolParameters to standardize serialization/deserialization.

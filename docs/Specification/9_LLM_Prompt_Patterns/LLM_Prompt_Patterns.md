@@ -226,3 +226,7 @@ Always design with flexibility in mind. External prompt overrides should be poss
 - **Gradual migration** to dynamic prompt providers as they mature
 
 Think of prompts as instructions that program the model for specific tasks. Just as you might load different configurations for different environments, you load different prompts for different models. With this approach, even quirky models like Grok 4 can be programmed to behave reliably, turning their weaknesses into solved problems rather than ongoing frustrations.
+
+---
+
+Prompt patterns and dynamic optimization are one part of the larger picture. Section 10 explores how this -- together with the driver contract, ToolDrivers, and orchestrators -- creates a division of labor and an ecosystem where different roles can specialize and contribute independently.

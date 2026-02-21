@@ -66,4 +66,14 @@ MCS follows a standard-first principle: if an established specification format e
 
 MCS does not prescribe a format -- it prescribes the driver contract.
 
+## What this enables
 
+The driver contract creates something that didn't exist before: a clear division of labor.
+
+Because each driver encapsulates specification, prompt logic, and execution behind a stable interface, roles can specialize independently. Technical engineers build ToolDrivers for specific protocols without needing AI knowledge. Prompt engineers optimize model-specific instructions inside drivers, making their work reusable across every application that uses that driver. AI application developers pick drivers and manage the conversation loop -- without understanding the underlying protocol or investing in prompt engineering.
+
+Prompt engineering, in particular, changes from a per-project cost into a one-time investment with compounding returns. When someone improves the prompts inside a driver, every application using it benefits immediately. Combined with dynamic prompt loading (Section 9), prompt configurations become versionable, tradeable artifacts.
+
+Because MCS drivers are standard libraries -- not separate services -- they integrate into existing toolchains: package registries, CI/CD pipelines, monitoring, access control. No special middleware, no dedicated protocol servers, no LLM-specific security layer. The LLM integration fits into the existing software architecture like any other module.
+
+This is the ecosystem MCS is designed to enable. Section 10 explores it in detail.
