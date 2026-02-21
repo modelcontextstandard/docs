@@ -37,9 +37,7 @@ abstract class MCSDriver {
     meta: DriverMeta
 
     abstract get_function_description(model_name?: string) -> string
-
     abstract get_driver_system_message(model_name?: string) -> string
-
     abstract process_llm_response(llm_response: string) -> DriverResponse
 }
 ```
@@ -52,7 +50,7 @@ abstract class MCSDriver {
 |---|---|---|
 | `true` | `false` | Tool call was found and successfully executed. `result` contains the tool output. |
 | `false` | `true` | Tool-call signature found but could not be parsed or executed. `result` is the unchanged input. `call_detail` and `retry_prompt` may be set. |
-| `false` | `false` | No tool call detected. `result` is the unchanged input (final answer). |
+| `false` | `false` | No tool call detected. `result` is the unchanged input. |
 
 **`retry_prompt`:** A driver-authored prompt hint that the client can append to the conversation when `call_failed` is true. This keeps prompt knowledge inside the driver. The client never needs to understand why the call failed or how to fix it.
 
@@ -76,7 +74,6 @@ abstract class MCSToolDriver {
     meta: DriverMeta  // target_llms = null, as it's orchestrator-facing
 
     abstract list_tools() -> array[Tool]  // List available tools
-
     abstract execute_tool(tool_name: string, arguments: dict) -> any  // Execute and return result
 }
 ```
@@ -92,11 +89,8 @@ class BasicOrchestrator extends MCSDriver {
     constructor(drivers: array[MCSToolDriver], name?: string)
 
     private collect_tools() -> array[Tool]  // Aggregate from drivers
-
     get_function_description(model_name?: string) -> string  // Format tools
-
     get_driver_system_message(model_name?: string) -> string  // Build prompt
-
     process_llm_response(llm_response: string) -> DriverResponse  // Parse, find tool, execute
 }
 ```
