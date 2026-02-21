@@ -15,6 +15,21 @@ sidebar_position: 13
 - **Autostart recommendation (container labels, health endpoints)**: Expand with virtualization mandates (e.g., Docker params, sandboxing rules) and startup guidelines; define how drivers signal needs (e.g., via metadata). SDKs provide reference frameworks for launching.
 - **Explore a Prompt Provider for dynamic loading**: Add informative section on future extensions for external prompt overrides/loading (e.g., via URLs/registries); define override semantics in init. Prototype in SDKs before standardizing.
 - **Hybrid driver-orchestrator patterns**: Clarify in spec how drivers can implement both MCSDriver and MCSToolDriver interfaces for versatility; provide guidelines on when to use hybrids. SDKs offer examples.
+- **User Consent before tool execution**: Currently `process_llm_response` is atomic -- it parses the LLM output, detects a tool call, and executes it in a single step. The client has no opportunity to intervene between detection and execution. This becomes critical when:
+  - The user should approve tool calls before they happen (e.g., "The AI wants to send an email to X -- allow?")
+  - Cost or rate-limit awareness requires gating (e.g., paid API calls)
+  - Audit trails demand explicit human-in-the-loop confirmation
+  - Safety-sensitive operations need review (e.g., file deletion, financial transactions)
+
+  The **ToolDriver** interface already provides a natural separation: the orchestrator parses the LLM output, extracts the tool name and arguments, and calls `execute_tool` as a discrete step. A consent check fits naturally between parse and execute. But **standalone MCSDriver** has no such seam -- `process_llm_response` does everything at once.
+
+  Possible approaches under discussion:
+  1. **Two-phase `process_llm_response`**: Split into `detect_tool_call(llm_response) -> ToolCallIntent | None` (parse only, no execution) and `execute_tool_call(intent) -> DriverResponse` (execute). The client decides what happens in between.
+  2. **Consent callback**: Pass an optional `on_before_execute(tool_name, arguments) -> bool` callback to the driver. The driver calls it before execution and aborts if it returns `False`.
+  3. **Accept that consent is an orchestrator concern**: Standalone drivers execute immediately by design. If consent is required, the architecture should use a ToolDriver + Orchestrator, where the orchestrator provides the consent seam. This is consistent with the principle that standalone drivers optimize for simplicity.
+
+  The third approach aligns well with the existing contract: it keeps the standalone driver simple while the orchestrator pattern naturally supports consent. However, option 1 would make consent possible without requiring a full orchestrator. This needs further discussion and community feedback.
+
 - **Raw source spec access**: Should drivers expose the *original* unprocessed source specification (e.g. the raw OpenAPI file before any reduction or transformation)? Currently `get_function_description` returns whatever the driver has prepared, which may be reduced, reformatted, or generated from `Tool` objects. A capability like `"raw_spec"` could signal that the original source is available, but no concrete use case has been identified yet. If needed, this could be modeled as a mixin or a method on `DriverMeta`.
 
 ### Package Naming Convention & Registry (for review)

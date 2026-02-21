@@ -59,7 +59,7 @@ Returns a machine-readable description of the available functions. How the drive
 
 **b) Via ToolDriver** -- The driver delegates to an internal `MCSToolDriver` that provides structured `Tool` objects via `list_tools()`. The driver then serializes these objects into the appropriate format (JSON, XML, plain text, etc.) based on the target model. This is the recommended pattern for hybrid drivers.
 
-**c) Raw pass-through** -- If the source specification is already LLM-readable (e.g. a well-structured OpenAPI JSON), the driver may pass it through with minimal or no transformation. Whether the *original* raw source should always be accessible is an open question (see [Section 13 -- Next Steps](../12_Next_Steps.md)).
+**c) Raw pass-through** -- If the source specification is already LLM-readable (e.g. a well-structured OpenAPI JSON), the driver may pass it through with minimal or no transformation. Whether the *original* raw source should always be accessible is an open question (see [Section 13 -- Next Steps](../13_Next_Steps.md)).
 
 
 ### 3.2 `get_driver_system_message(model_name?)`
