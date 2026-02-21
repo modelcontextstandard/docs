@@ -11,7 +11,7 @@ Connecting LLMs to external systems is still harder than it should be. Most curr
 
 MCS treats integration as a driver problem. Just like operating systems use device drivers, LLMs can use interface drivers to connect to APIs, tools, databases or devices. Instead of writing custom glue code, you configure reusable drivers based on existing standards like OpenAPI and REST. These drivers translate between your LLM’s language output and actionable operations.
 
-If you've used MCP before. MCS builds on the same core the function calling principle but avoids MCPs downsides, like a new stack, new security headaches and complex hosting. It’s faster to adopt, easier to maintain, and model-agnostic.
+If you've used MCP before, MCS builds on the same core -- the function calling principle -- but avoids MCP's downsides, like a new stack, new security headaches and complex hosting. It's faster to adopt, easier to maintain, and model-agnostic.
 
 MCS is your plug-and-play standard for safe, scalable and elegant LLM integration.
 
@@ -42,7 +42,6 @@ It's future-proof too with potential dynamic hubs using checksums to auto-load u
 ### ✅ Autostart? Not Required
 Unlike MCP's autostart dependency, MCS avoids that. Drivers connect directly to existing systems, avoiding unnecessary CPU usage and security risks.
 Use autostart only when needed and do it safely. MCS makes suggestions how to implement this more safely.
-Say goodbye to malicious servers (up to 8% on Github) [1](https://blog.virustotal.com/2025/06/what-17845-github-repos-taught-us-about.html).
 
 ### ✅ Compatible with MCP, but Cleaner
 MCP pioneered standardization in this area, MCS makes it practical.
@@ -176,8 +175,8 @@ MCS addresses these pain points by recognizing that this is fundamentally a driv
 
 MCS trims function calling down to two building blocks:
 
-    Spec: Machine-readable function descriptions (OpenAPI, JSON-Schema, ...) – use standards if possible!
-    Bridge: Transport layers (HTTP, AS2, CAN, ...) – handled by parsers.
+- **Spec:** Machine-readable function descriptions (OpenAPI, JSON-Schema, ...) -- use standards if possible!
+- **Bridge:** Transport layers (HTTP, AS2, CAN, ...) -- handled by parsers.
 
 Just like operating systems use device drivers to communicate with hardware, LLMs need interface drivers to communicate with external systems. 
 The key difference with MCS:
@@ -210,7 +209,7 @@ MCS enables:
 - Reduced attack surface: Fewer components, established security practices
 - Standard authentication: OAuth, API keys, JWT – use what already works
 
-CS drivers are static components like software modules that can be downloaded and used directly. This enables trusted driver repositories with checksum verification, similar to APT or Maven. Making secure deployment and auto-loading straightforward.
+MCS drivers are static components like software modules that can be downloaded and used directly. This enables trusted driver repositories with checksum verification, similar to APT or Maven. Making secure deployment and auto-loading straightforward.
 
 
 #### Developer Experience
@@ -226,8 +225,8 @@ With MCS, developers get:
 Already using MCP? MCS provides a smooth transition:
 
 - Wrap existing MCP servers as MCS drivers (mcs-driver-mcp-stdio)
-Gradual migration without breaking existing functionality
-Immediate benefits for new integrations
+- Gradual migration without breaking existing functionality
+- Immediate benefits for new integrations
 
 
 #### The Bottom Line
