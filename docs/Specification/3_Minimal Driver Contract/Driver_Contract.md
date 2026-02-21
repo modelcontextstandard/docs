@@ -3,7 +3,7 @@ title: MCS Driver Contract
 sidebar_position: 2
 ---
 
-# MCS Driver Contract – Version 0.2
+# MCS Driver Contract – Version 0.3
 
 This document defines the minimal contract all MCS-compatible drivers must implement.
 
@@ -28,13 +28,26 @@ struct DriverMeta {
 abstract class MCSDriver {
     meta: DriverMeta
 
+    // --- per-call state (reset at the start of every process_llm_response call) ---
+    call_executed: boolean = false   // true after a tool call was successfully executed
+    call_failed: boolean = false      // true if a tool call signature was found but could not be parsed or executed
+    last_call_detail: string? = null // optional: reason when call_failed is true (for debugging)
+
     abstract get_function_description(model_name?: string) -> string  // Machine-readable spec
 
     abstract get_driver_system_message(model_name?: string) -> string  // Full system prompt
 
     abstract process_llm_response(llm_response: string) -> any  // Execute if call detected, else return input
+
+    get_retry_prompt() -> string?  // Returns a prompt hint when call_failed is true, null otherwise
 }
 ```
+
+**Per-call state:** `call_executed`, `call_failed` and `last_call_detail` are reset at the beginning of every `process_llm_response()` invocation. They reflect the outcome of the most recent call only. This makes the driver stateful per-call but not per-conversation -- conversation history remains the client's responsibility.
+
+**Internal self-healing:** Before setting `call_failed = true`, the driver should attempt any configured self-healing patterns (e.g. fixing known model-specific formatting errors). Only if self-healing also fails does the driver signal the failure to the client.
+
+**`get_retry_prompt()`:** Returns a driver-authored prompt hint that the client can append to the conversation when `call_failed` is true. This keeps prompt knowledge inside the driver. Returns null when there is nothing to retry.
 
 ### ToolDriver (for Orchestration)
 
