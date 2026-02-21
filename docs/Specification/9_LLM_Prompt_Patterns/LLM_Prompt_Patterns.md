@@ -149,6 +149,23 @@ For detailed specifications, use: fetch_tool_spec(tool_name)
 
 Advanced implementations might use hybrid approaches, clustering related tools or progressively disclosing capabilities based on conversation context.
 
+### 3. Curated Toolset Style
+
+Instead of exposing a full OpenAPI spec with dozens of endpoints, a driver can load a **curated toolset definition** that contains only the endpoints relevant to the use case. This has two benefits:
+
+- **Token reduction**: A typical REST API might expose 40+ endpoints, but a specific use case often only needs 3-5. Sending the full spec wastes tokens and increases the chance of the LLM choosing an irrelevant tool.
+- **Custom descriptions**: The original API documentation is written for human developers, not for LLMs. A curated toolset can replace endpoint descriptions with LLM-optimized text that improves accuracy. This is what MCP does implicitly when someone writes a wrapper server with hand-crafted tool descriptions -- MCS makes it explicit and reusable without a wrapper.
+
+A curated toolset is a plain JSON file that the driver loads instead of (or alongside) the raw spec:
+
+```python
+driver = RestHttpDriver(
+    urls=["https://raw.githubusercontent.com/org/mcs-toolsets/main/crm-subset.json"]
+)
+```
+
+Toolset definitions can be versioned via git, shared across teams, and distributed without custom infrastructure. This makes "pick the right endpoints with the right descriptions" a shareable, reviewable artifact rather than knowledge locked inside a single wrapper server.
+
 
 ## Model-Specific Optimization
 Different models excel with different prompt styles, and these differences go beyond mere preference. They can mean the difference between reliable execution and complete failure. These patterns have emerged:
