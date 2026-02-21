@@ -116,6 +116,38 @@ The demo shows the minimal setup needed to close the gap between LLM and real-wo
 **This principle scales:** By standardizing function calling itself, the direct text input/output interface to LLMs, MCS makes this integration seamless and universal. Just swap in your API specs, add MCS drivers, and you have full integration in your AI app. 
 
 
+## How It Works: The Conversation Loop
+
+In a real application the client, the LLM and one or more drivers interact in a loop. The driver stays stateless; the client manages the conversation:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Client
+    participant LLM
+    participant Driver
+
+    Client->>Driver: get_driver_system_message()
+    Driver-->>Client: system prompt (incl. tool descriptions)
+
+    User->>Client: "Find the email for Danny"
+    loop until final answer
+        Client->>LLM: messages (system + history)
+        LLM-->>Client: response (text or tool call)
+        Client->>Driver: process_llm_response(response)
+        alt tool was called
+            Driver-->>Client: tool result
+            Note over Client: append result to history
+        else no tool call
+            Driver-->>Client: unchanged response
+            Client-->>User: final answer
+        end
+    end
+```
+
+The driver never talks to the LLM directly. It only provides the spec and executes calls. This separation keeps the contract minimal: new transports and protocols only need a driver, not changes to the client or the LLM integration.
+
+
 ## Why MCS exists: The Problem with Current Solutions
 LLMs are becoming the core of modern software stacks, but connecting them to external systems remains unnecessarily complex. MCP deserves credit for being the first serious attempt to standardize function calling. It sparked the revolution and gave developers a protocol to build upon.
 

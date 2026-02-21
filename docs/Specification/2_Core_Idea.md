@@ -62,4 +62,27 @@ Once the LLM emits a structured function call (typically as a JSON object in the
 
 The driver parses the call, dispatches it over its bridge (e.g. HTTP, CAN-Bus, AS2), and returns the raw result. The result can then be forwarded back into the conversation, either directly or via formatting logic handled elsewhere.
 
+
+
+### Phase C – Conversation loop
+
+In practice, a single user request may require multiple tool calls before the LLM can produce a final answer. The client therefore runs an iterative loop:
+
+```
+                    ┌───────────────────────────────┐
+                    │                               ▼
+User ──► Client ──► LLM ──► process_llm_response ──► tool called?
+                     ▲              │                  │
+                     │          result              no │
+                     └──────────────┘                  ▼
+                                                 Final answer
+```
+
+1. The client sends the conversation (system prompt + message history) to the LLM.
+2. The LLM responds. The client passes the response to `process_llm_response()`.
+3. If the driver executed a tool call (the return value differs from the input), the client appends the LLM message and the tool result to the conversation history and returns to step 1.
+4. If no tool call was detected (the return value equals the input), the LLM’s response is the final answer for the user.
+
+This loop is entirely managed by the client. The driver itself is stateless and handles one call at a time. This keeps the driver contract simple while allowing arbitrarily complex multi-step interactions.
+
 A Proof of Concept with existing ChatModels can be found [here](https://github.com/modelcontextstandard#getting-started-experience-the-wow-moment-in-2-minutes).
