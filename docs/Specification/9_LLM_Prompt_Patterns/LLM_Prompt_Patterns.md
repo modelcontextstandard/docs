@@ -93,6 +93,16 @@ parsing_grok4 = {
 
 These three components form a complete prompt strategy for each model or model family. They define how the model is instructed, how its output is interpreted, and how the driver bridges both ends. This design enables flexible, model-specific prompt optimization without touching application or driver code.
 
+### Self-Healing
+
+Because LLM output is always plain text, parsing can fail -- even when the model clearly intended a tool call. A JSON bracket might be missing, a field name misspelled, or the output wrapped in unexpected markdown fences. These are not logic errors but formatting errors, and they are predictable per model.
+
+Before signaling `call_failed` to the client, a driver should attempt to fix known formatting issues automatically. This is self-healing: the driver applies model-specific correction patterns (e.g. stripping markdown fences, fixing common JSON syntax errors, normalizing field names) and retries parsing on the corrected output.
+
+If self-healing succeeds, the call proceeds as if it was correctly formatted from the start -- the client never sees the intermediate failure. Only when all correction attempts fail does the driver return `call_failed = true` with a `retry_prompt` that instructs the LLM to try again.
+
+Self-healing is optional but recommended. It directly reduces the compound failure rate described above and is particularly valuable for models with known formatting quirks (e.g. Grok's tendency to output tool calls as plain text).
+
 
 ## Dynamic Prompt Loading
 The true power of this approach emerges when prompts become dynamically loadable. Rather than hardcoding prompts in driver code, drivers can load model-specific configurations from a registry during initialization or when the active model changes. This enables several capabilities:
