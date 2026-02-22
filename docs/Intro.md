@@ -140,11 +140,11 @@ sequenceDiagram
         Client->>Driver: process_llm_response(response)
         Driver-->>Client: DriverResponse
         alt response.call_executed
-            Note over Client: append response.result to history
+            Note over Client: extend history with response.messages
         else response.call_failed
-            Note over Client: append response.retry_prompt
+            Note over Client: extend history with response.messages (retry)
         else no match
-            Client-->>User: response.result (final answer)
+            Client-->>User: llm output (final answer)
         end
     end
 ```

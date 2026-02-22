@@ -3,7 +3,7 @@ title: MCS Driver Contract
 sidebar_position: 2
 ---
 
-# MCS Driver Contract – Version 0.4
+# MCS Driver Contract – Version 0.5
 
 This document defines the minimal contract all MCS-compatible drivers must implement.
 See [Minimal Driver Contract](Minimal_Driver_Contract.md) for detailed descriptions of each method, the stateless design rationale, and the `DriverResponse` semantics.
@@ -27,11 +27,12 @@ struct DriverMeta {
 }
 
 struct DriverResponse {
-    result: any                  // raw output of the executed operation, or the unchanged input
-    call_executed: boolean       // true when a tool call was successfully executed
-    call_failed: boolean         // true when a tool-call signature was found but could not be parsed/executed
-    call_detail: string? = null  // optional reason when call_failed is true (for debugging)
-    retry_prompt: string? = null // driver-authored prompt hint for the client to append on retry
+    tool_call_result: any = null     // raw output of the executed tool operation (only set when call_executed is true)
+    call_executed: boolean = false   // true when a tool call was successfully executed
+    call_failed: boolean = false     // true when a tool-call signature was found but could not be parsed/executed
+    call_detail: string? = null      // optional reason when call_failed is true (for debugging)
+    retry_prompt: string? = null     // driver-authored prompt hint for the client to append on retry
+    messages: array[Message]? = null // pre-formatted conversation entries the client appends to its history
 }
 
 abstract class MCSDriver {
@@ -39,7 +40,7 @@ abstract class MCSDriver {
 
     abstract get_function_description(model_name?: string) -> string
     abstract get_driver_system_message(model_name?: string) -> string
-    abstract process_llm_response(llm_response: string) -> DriverResponse
+    abstract process_llm_response(llm_response: string | dict, streaming?: boolean = false) -> DriverResponse
 }
 ```
 
@@ -80,7 +81,7 @@ class BasicOrchestrator extends MCSDriver {
     private collect_tools() -> array[Tool]  // Aggregate from drivers
     get_function_description(model_name?: string) -> string  // Format tools
     get_driver_system_message(model_name?: string) -> string  // Build prompt
-    process_llm_response(llm_response: string) -> DriverResponse  // Parse, find tool, execute
+    process_llm_response(llm_response: string | dict, streaming?: boolean = false) -> DriverResponse  // Parse, find tool, execute
 }
 ```
 

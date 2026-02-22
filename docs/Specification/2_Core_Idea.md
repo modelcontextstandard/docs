@@ -69,26 +69,27 @@ The driver parses the call, dispatches it over its bridge (e.g. HTTP, CAN-Bus, A
 In practice, a single user request may require multiple tool calls before the LLM can produce a final answer. The client therefore runs an iterative loop:
 
 ```
-                    ┌───────────────────────────────────────────┐
-                    │                                           ▼
+                    ┌───────────────────────────────────────────────┐
+                    │                                               ▼
 User ──► Client ──► LLM ──► process_llm_response() ──► DriverResponse
-                     ▲              │                       │
-                     │       response.result      response.call_executed?
-                     │              │                  │         │
-                     └──────────────┘                retry     no match
-                                                       │         │
-                                       response.retry_prompt  Final answer
-                                                        │
-                     ┌──────────────────────────────────┘
-                     ▼
+                     ▲                                      │
+                     │                          response.messages
+                     │                            │         │
+                     │                      call_executed  no match
+                     │                      or call_failed    │
+                     │                            │      Final answer
+                     │     messages.extend(       │
+                     │       response.messages)    │
+                     │                            │
+                     └────────────────────────────┘
 ```
 
 1. The client sends the conversation (system prompt + message history) to the LLM.
 2. The LLM responds. The client passes the response to `process_llm_response()`, which returns a `DriverResponse`.
-3. If `response.call_executed` is true: the client appends the LLM message and `response.result` to the conversation history and returns to step 1.
-4. If `response.call_failed` is true: the driver found a tool-call signature but could not parse or execute it. The client appends `response.retry_prompt` to the conversation so the LLM can correct its output, then returns to step 1.
-5. If neither flag is set: no tool call was detected. `response.result` is the final answer for the user.
+3. If `response.call_executed` is true: the client appends `response.messages` to the conversation history and returns to step 1. The messages are pre-formatted by the driver and include the original LLM output and the tool result.
+4. If `response.call_failed` is true: the driver found a tool-call signature but could not parse or execute it. The client appends `response.messages` (which includes the retry hint) to the conversation and returns to step 1.
+5. If neither flag is set: no tool call was detected. `response.messages` is `null` -- the LLM output is the final answer for the user.
 
-The driver is **stateless** -- all outcome information lives in the returned `DriverResponse`. The driver does not track conversation history; that remains the client's responsibility. This keeps the driver contract simple while allowing arbitrarily complex multi-step interactions.
+The driver is **stateless** -- all outcome information lives in the returned `DriverResponse`. The driver does not track conversation history; that remains the client's responsibility. The `messages` field shifts message formatting from the client to the driver, keeping client logic minimal while allowing arbitrarily complex multi-step interactions.
 
 A Proof of Concept with existing ChatModels can be found [here](https://github.com/modelcontextstandard#getting-started-experience-the-wow-moment-in-2-minutes).

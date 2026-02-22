@@ -8,9 +8,10 @@ sidebar_position: 13
 ## Core Standard Enhancements (Define in Spec for Consistency Across SDKs)
 - **Finalize JSON-Schema for `DriverMeta` and capability flags**: This ensures metadata is machine-validatable, promoting interoperability. Include schemas for Bindings, Tools, and ToolParameters to standardize serialization/deserialization.
 - **Decide if sync/async drivers are needed**: Specify optional async semantics in the standard (e.g., for I/O-heavy bridges); define when to use (e.g., streaming responses). SDKs handle language idioms (e.g., async/await in Python).
-- ~~**Clear signaling in `process_llm_response` for call occurrence**~~: **Resolved in v0.4** -- `process_llm_response` now returns a `DriverResponse` object that carries `result`, `call_executed`, `call_failed`, `call_detail`, and `retry_prompt`. The driver itself is fully stateless and thread-safe. See Section 3.
+- ~~**Clear signaling in `process_llm_response` for call occurrence**~~: **Resolved in v0.4** -- `process_llm_response` now returns a `DriverResponse` object that carries `tool_call_result`, `call_executed`, `call_failed`, `call_detail`, and `retry_prompt`. The driver itself is fully stateless and thread-safe. See Section 3.
+- ~~**Streaming and native tool-call support**~~: **Resolved in v0.5** -- `process_llm_response` now accepts `str | dict` (supporting both raw text and structured native tool-call objects) and an optional `streaming` flag. The `DriverResponse` gained a `messages` field that provides pre-formatted conversation entries the client can append directly to its message history. This shifts message formatting responsibility from the client to the driver. See Section 3.
 - **Exception handling and error reporting vs. return values in error cases**: Define what clients expect (e.g., structured error objects with codes/messages for failures, raw results on success); SDKs adapt to language-specific exceptions/logging.
-- **Should the output from `process_llm_response()` really be ANY or a structured object?**: Mandate a minimal envelope (e.g., JSON with ```{ "result": any, "status": int, "error": string? }```) for metadata like status codes; keeps flexibility while ensuring parseability. SDKs can add type safety.
+- ~~**Should the output from `process_llm_response()` really be ANY or a structured object?**~~: **Resolved in v0.5** -- `DriverResponse` now separates `tool_call_result` (raw tool output, only meaningful on success) from `messages` (pre-formatted conversation entries). The client no longer receives the unchanged LLM input in `result`; instead, `messages` provides everything needed for the conversation history.
 - **Driver versioning, registries, dynamic loading for true Plug & Play and max security**: Outline guidelines in the spec (e.g., semver rules, registry discovery protocols, checksum requirements); include autoloading via names/checksums. SDKs implement loading mechanics (e.g., Pip integration).
 - **Autostart recommendation (container labels, health endpoints)**: Expand with virtualization mandates (e.g., Docker params, sandboxing rules) and startup guidelines; define how drivers signal needs (e.g., via metadata). SDKs provide reference frameworks for launching.
 - **Explore a Prompt Provider for dynamic loading**: Add informative section on future extensions for external prompt overrides/loading (e.g., via URLs/registries); define override semantics in init. Prototype in SDKs before standardizing.
@@ -80,6 +81,68 @@ The spec only governs the first level (the logical prefix). The import conventio
 
 - Should `-standalone` and `-toolonly` be reserved suffixes enforced by `mcs-pkg`, or just a convention?
 - Should `mcs-pkg` enforce the `<protocol>-<transport>` structure, or allow freeform names with metadata-based classification?
+
+### Provider Tool-Call Format Helpers (for evaluation)
+
+LLM providers return tool calls in vastly different wire formats:
+
+| Provider | Format |
+|---|---|
+| OpenAI / Azure | `tool_calls` array with `function.name` + `function.arguments` (JSON string) |
+| Anthropic Claude | `tool_use` content block with `name` + `input` (object) |
+| Google Gemini | `functionCall` with `name` + `args` (object) |
+| Ollama / local models | Plain-text JSON in assistant content (no structured event) |
+
+Currently each driver must handle all formats it wants to support.  This leads to duplicated parsing logic across drivers and makes it harder for driver authors who are not LLM specialists.
+
+**Proposed approach:**  Provide a set of **format helpers** (utility functions or lightweight mixins) in `mcs-driver-core` that normalize provider-specific tool-call representations into a common `{"tool": ..., "arguments": ...}` dict.  A driver author can then call a single helper before executing the tool, instead of implementing format-specific parsing.
+
+Key design constraints:
+
+- The helpers are **opt-in utilities**, not part of the core `MCSDriver` interface.  The contract stays format-agnostic.
+- `process_llm_response` already accepts `str | dict` (v0.5).  The helpers operate at the layer *before* the driver is called (client-side) or *inside* the driver (driver-side), depending on the integration style.
+- The format decision is driven by the **wire format**, not the model name.  A helper like `normalize_openai_tool_call(delta)` or `normalize_anthropic_tool_use(block)` makes the format explicit.  There is no need for a `model_name` parameter on `process_llm_response` itself -- the format is what matters, not who produced it.
+- Each SDK evaluates which provider formats to support and ships the appropriate helpers.  The spec does not mandate specific providers.
+
+**Open question:**  Should these helpers live in `mcs-driver-core` (zero extra dependencies, string/dict only) or in a separate `mcs-driver-llm-utils` package that can depend on provider SDKs for type safety?
+
+### Runner Concept (for discussion)
+
+The OpenAI Agents SDK introduces a "Runner" that encapsulates the entire LLM-tool execution loop: LLM call, tool-call detection, execution, history management, and iteration -- all in a single `run(input) -> output` call. The developer never writes the loop; the Runner does everything.
+
+With MCS v0.5 and the `messages` field on `DriverResponse`, a similar convenience layer becomes trivially implementable:
+
+```pseudo
+class MCSRunner {
+    driver: MCSDriver
+    llm_client: LLMClient
+
+    run(user_input: string) -> string {
+        messages = [system_prompt, user_message]
+        loop {
+            llm_output = llm_client.chat(messages)
+            response = driver.process_llm_response(llm_output)
+            if response.messages:
+                messages.extend(response.messages)
+            if not response.call_executed and not response.call_failed:
+                return llm_output  // final answer
+        }
+    }
+}
+```
+
+**How it relates to existing MCS concepts:**
+
+| Concept | Direction | What it aggregates |
+|---|---|---|
+| **Orchestrator** | Horizontal | Multiple ToolDrivers into one MCSDriver |
+| **Runner** | Vertical | MCSDriver + LLM + Loop into one `run()` call |
+
+A Runner is *not* an Orchestrator in the strict MCS sense. An Orchestrator aggregates tools across drivers and is transparent to the client (it *is* an MCSDriver). A Runner automates the client-side conversation loop and sits *above* the driver layer.
+
+However, a Runner *could* be implemented as an MCSDriver -- its `process_llm_response` would internally run the full loop and return only the final answer. This makes it chainable but breaks the principle that the client controls the loop. For simple use cases (chatbots, scripts, batch processing), this trade-off is acceptable.
+
+**Recommendation:** SDKs may offer a Runner as an optional convenience class (similar to `BasicOrchestrator`). Complex clients that need streaming, human-in-the-loop consent, or custom UI continue to use the manual loop. The Runner is opt-in, not a replacement for the core contract.
 
 ## Defer to SDKs (Implementation Details, Not Core Spec)
 - **Provide language-specific reference interfaces in `python-sdk` / `typescript-sdk`**: Fully shift to SDKs as the standard is agnostic; use them to bootstrap other languages (e.g., Go, Rust) with code samples.
