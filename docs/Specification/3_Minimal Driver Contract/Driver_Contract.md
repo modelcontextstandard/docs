@@ -45,7 +45,7 @@ abstract class MCSDriver {
 ```
 
 ### ToolDriver (for Orchestration)
-(see [Section 4](4_ToolDriver_Adapter.md))
+(see [Section 4](../4_ToolDriver_Adapter.md))
 
 ```pseudo
 struct ToolParameter {
