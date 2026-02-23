@@ -153,7 +153,7 @@ MCS does not introduce its own package manager. Drivers are published to existin
 - Links to existing registries (PyPI, npm, GitHub)
 - Machine-readable manifest per driver (or automatically extracted from `DriverMeta`)
 - Labels: Verified / Reference / Community
-- Compatibility matrix (Contract v0.5 <-> driver v1.2.3)
+- Compatibility matrix (Contract v0.5 ↔ driver v1.2.3)
 - Security notes ("requires shell access", "reads local filesystem")
 - Usage examples ("works with these orchestrators / LLMs")
 

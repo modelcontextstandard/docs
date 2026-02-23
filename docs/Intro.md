@@ -9,7 +9,7 @@ sidebar_position: 0
 
 Connecting LLMs to external systems is still harder than it should be. Most current solutions rely on custom wrappers or complex function-calling protocols that require heavy infrastructure and manual parsing. MCS offers a simpler alternative.
 
-MCS treats integration as a driver problem. Just like operating systems use device drivers, LLMs can use interface drivers to connect to APIs, tools, databases or devices. Instead of writing custom glue code, you configure reusable drivers based on existing standards like OpenAPI and REST. These drivers translate between your LLM’s language output and actionable operations.
+The idea that LLMs are becoming the new operating systems – famously articulated by Andrej Karpathy – is gaining traction. If LLMs are the OS, they need drivers. MCS treats integration as exactly that: a driver problem. Just like operating systems use device drivers, LLMs can use interface drivers to connect to APIs, tools, databases or devices. Instead of writing custom glue code, you configure reusable drivers based on existing standards like OpenAPI and REST. These drivers translate between your LLM’s language output and actionable operations.
 
 If you've used MCP before, MCS builds on the same core -- the function calling principle -- but avoids MCP's downsides, like a new stack, new security headaches and complex hosting. It's faster to adopt, easier to maintain, and model-agnostic.
 
