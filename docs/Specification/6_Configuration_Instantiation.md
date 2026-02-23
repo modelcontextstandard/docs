@@ -1,9 +1,9 @@
 ---
-title: 5. Configuration & Instantiation
-sidebar_position: 5
+title: 6. Configuration & Instantiation
+sidebar_position: 6
 ---
 
-# 5 · Configuration & Instantiation
+# 6 · Configuration & Instantiation
 
 Drivers are configured via constructors, e.g., URLs for specs, auth tokens, proxies. Use libraries like Pydantic for validation.
 

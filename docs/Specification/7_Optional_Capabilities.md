@@ -1,9 +1,9 @@
 ---
-title: 6. Optional Capabilities
-sidebar_position: 6
+title: 7. Optional Capabilities
+sidebar_position: 7
 ---
 
-# 6 · Optional Capabilities
+# 7 · Optional Capabilities
 
 MCS keeps the base contract tiny. Optional behavior is signaled via **capability flags** in `DriverMeta`. Consumers must *feature-detect* before invoking an optional method (i.e., check if the flag exists in `meta.capabilities` and then dynamically call the corresponding method).
 

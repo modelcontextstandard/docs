@@ -1,9 +1,9 @@
 ---
-title: 12. Versioning & Compatibility
-sidebar_position: 12
+title: 13. Versioning & Compatibility
+sidebar_position: 13
 ---
 
-# 12 · Versioning & Compatibility
+# 13 · Versioning & Compatibility
 
 MCS follows Semantic Versioning (`MAJOR.MINOR.PATCH`) for the specification document itself, ensuring clear evolution while maintaining backward compatibility where possible.
 

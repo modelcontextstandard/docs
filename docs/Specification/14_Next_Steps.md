@@ -1,9 +1,9 @@
 ---
-title: 13. Next Steps
-sidebar_position: 13
+title: 14. Next Steps
+sidebar_position: 14
 ---
 
-# 13 · Next Steps
+# 14 · Next Steps
 
 ## Core Standard Enhancements (Define in Spec for Consistency Across SDKs)
 - **Finalize JSON-Schema for `DriverMeta` and capability flags**: This ensures metadata is machine-validatable, promoting interoperability. Include schemas for Bindings, Tools, and ToolParameters to standardize serialization/deserialization.
@@ -15,7 +15,7 @@ sidebar_position: 13
 - **Driver versioning, registries, dynamic loading for true Plug & Play and max security**: Outline guidelines in the spec (e.g., semver rules, registry discovery protocols, checksum requirements); include autoloading via names/checksums. SDKs implement loading mechanics (e.g., Pip integration).
 - **Autostart recommendation (container labels, health endpoints)**: Expand with virtualization mandates (e.g., Docker params, sandboxing rules) and startup guidelines; define how drivers signal needs (e.g., via metadata). SDKs provide reference frameworks for launching.
 - **Explore a Prompt Provider for dynamic loading**: Add informative section on future extensions for external prompt overrides/loading (e.g., via URLs/registries); define override semantics in init. Prototype in SDKs before standardizing.
-- **Hybrid driver-orchestrator patterns**: Clarify in spec how drivers can implement both MCSDriver and MCSToolDriver interfaces for versatility; provide guidelines on when to use hybrids. SDKs offer examples.
+- ~~**Hybrid driver-orchestrator patterns**~~: **Resolved** -- Sections 4 and 5 now cover the ToolDriver, hybrid driver, adapter pattern, and orchestrator composition in detail.
 - **Multi-connection support within a single driver**: Currently, a driver handles one binding with one connection. Multiple connections of the same binding (e.g., three REST APIs) require an Orchestrator. An alternative model: allow a single driver to hold multiple connections natively (e.g., accept a list of URLs). This would reduce the Orchestrator's role to pure multi-binding coordination (REST + Filesystem + ...), simplifying the architecture for the common case of "same protocol, multiple endpoints." Trade-offs: a multi-connection driver is more complex internally but removes an Orchestrator layer for the most frequent use case. This needs prototyping and community feedback before standardizing.
 - **User Consent before tool execution**: Currently `process_llm_response` is atomic -- it parses the LLM output, detects a tool call, and executes it in a single step. The client has no opportunity to intervene between detection and execution. This becomes critical when:
   - The user should approve tool calls before they happen (e.g., "The AI wants to send an email to X -- allow?")
@@ -33,54 +33,6 @@ sidebar_position: 13
   The third approach aligns well with the existing contract: it keeps the standalone driver simple while the orchestrator pattern naturally supports consent. However, option 1 would make consent possible without requiring a full orchestrator. This needs further discussion and community feedback.
 
 - **Raw source spec access**: Should drivers expose the *original* unprocessed source specification (e.g. the raw OpenAPI file before any reduction or transformation)? Currently `get_function_description` returns whatever the driver has prepared, which may be reduced, reformatted, or generated from `Tool` objects. A capability like `"raw_spec"` could signal that the original source is available, but no concrete use case has been identified yet. If needed, this could be modeled as a mixin or a method on `DriverMeta`.
-
-### Package Naming Convention & Registry (for review)
-
-A consistent naming scheme is essential for package discovery via PyPI, npm, and the planned `mcs-pkg` registry. The following convention is under consideration:
-
-**Two prefixes only:**
-
-```
-mcs-driver-<protocol>-<transport>[-<variant>]     # Drivers (all types)
-mcs-orchestrator-<strategy>[-<variant>]            # Orchestrators
-```
-
-**Driver type defaults to hybrid** (implements both MCSDriver and MCSToolDriver). When a driver only supports one mode, the variant suffix makes this explicit:
-
-| Package name | Type | Usage |
-|---|---|---|
-| `mcs-driver-rest-http` | Hybrid (default) | Standalone or via Orchestrator |
-| `mcs-driver-rest-http-petstore` | Hybrid, variant | Specific API, both modes |
-| `mcs-driver-rest-http-standalone` | Standalone only | Direct client use, no `list_tools()`/`execute_tool()` |
-| `mcs-driver-filesystem-localfs-toolonly` | Tool only | Orchestrator required, no LLM-facing methods |
-| `mcs-orchestrator-basic` | Orchestrator | Aggregates ToolDrivers |
-| `mcs-orchestrator-weighted` | Orchestrator | Priority-based routing |
-
-**Design rationale:**
-
-- `<protocol>-<transport>` maps directly to the Binding concept in `DriverMeta`. Each driver handles exactly one pair.
-- `[-<variant>]` is freely chosen by the author to distinguish implementations, API-specific drivers, or capability restrictions (`-standalone`, `-toolonly`).
-- Discovery stays simple: `pip search mcs-driver-rest-http` finds all REST-HTTP drivers regardless of type. Web-based package browsers (PyPI, npm) can filter by prefix without needing capability metadata.
-- `DriverMeta.capabilities` carries the machine-readable type information (`"standalone"`, `"orchestratable"`) for programmatic discovery via `mcs-pkg`.
-
-**Language-specific conventions are SDK responsibility:**
-
-The specification defines the *logical* naming structure (`mcs-driver-<protocol>-<transport>[-<variant>]`), but each language ecosystem must solve discovery through its own SDK and existing package infrastructure. The goal: drivers must be discoverable and installable *without* a central MCS registry from day one. For Python, this means PyPI prefix search; for TypeScript, npm scoped packages or prefix conventions; for Go, module paths; and so on. Each SDK documents its own convention. A central registry (`mcs-pkg`) may complement these later, but must never be a prerequisite.
-
-**SDKs define three naming levels**, not just one:
-
-| Level | Spec defines | SDK defines |
-|---|---|---|
-| **Package manager** | Logical prefix `mcs-driver-<protocol>-<transport>` | Mapping to ecosystem (PyPI, npm, crates.io, ...) |
-| **Import / module path** | — | Language-idiomatic import convention for IDE autocompletion |
-| **Class / file naming** | — | Internal structure and naming rules for code navigation |
-
-The spec only governs the first level (the logical prefix). The import convention and file layout are SDK-internal decisions -- but they are equally important because they determine how developers *find and use* drivers in their IDE. Predictable import paths enable autocompletion: typing `from mcs.driver.` in Python lists all installed drivers; typing `import { } from "mcs-driver-rest-http"` in TypeScript does the same. Each SDK must document its full naming stack (package manager name → import path → class/file names) so that all three levels are consistent and discoverable.
-
-**Open questions:**
-
-- Should `-standalone` and `-toolonly` be reserved suffixes enforced by `mcs-pkg`, or just a convention?
-- Should `mcs-pkg` enforce the `<protocol>-<transport>` structure, or allow freeform names with metadata-based classification?
 
 ### ToolCallSignalingMixin -- Inline tool-call detection during streaming (prototyped in Python SDK)
 

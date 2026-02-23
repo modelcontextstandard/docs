@@ -1,9 +1,9 @@
 ---
-title: 7. Autostart Convention
-sidebar_position: 7
+title: 8. Autostart Convention
+sidebar_position: 8
 ---
 
-# 7 · Autostart Convention
+# 8 · Autostart Convention
 
 Autostart is mostly obsolete in MCS, as existing interfaces (e.g., HTTP endpoints) are used directly. For local systems, employ direct code (e.g., mcs-driver-filesystem-localfs) without spinning up extra processes.
 

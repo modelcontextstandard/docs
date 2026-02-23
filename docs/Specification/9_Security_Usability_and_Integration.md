@@ -1,9 +1,9 @@
 ---
-title: 8. Security, Usability and Integration
-sidebar_position: 8
+title: 9. Security, Usability and Integration
+sidebar_position: 9
 ---
 
-# 8 · Security, Usability and Integration
+# 9 · Security, Usability and Integration
 
 A central goal of the Model Context Standard (MCS) is to connect LLMs to external systems directly and minimally. Unlike MCP, MCS avoids a custom protocol, relying on mature technologies like HTTP, OpenAPI, or Docker that are already proven secure. This eliminates many potential attack surfaces typical of new standards.
 
