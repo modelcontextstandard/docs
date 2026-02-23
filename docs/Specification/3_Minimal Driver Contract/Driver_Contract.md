@@ -3,7 +3,7 @@ title: MCS Driver Contract
 sidebar_position: 2
 ---
 
-# MCS Driver Contract – Version 0.5
+# MCS Driver Contract – Version 0.6
 
 This document defines the minimal contract all MCS-compatible drivers must implement.
 See [Minimal Driver Contract](Minimal_Driver_Contract.md) for detailed descriptions of each method, the stateless design rationale, and the `DriverResponse` semantics.
@@ -12,18 +12,18 @@ The syntax is language-agnostic and intended to guide implementations across all
 
 ```pseudo
 struct Binding {
-    protocol: string  // "REST", "GraphQL", "SOAP", etc.
-    transport: string  // "HTTP", "MQTT", "gRPC", etc.
-    spec_format: string  // "OpenAPI", "WSDL", "Custom", etc.
+    capability: string   // what the driver does: "csv", "rest", "filesystem", "pdf"
+    adapter: string      // which backend: "localfs", "http", "smb", "s3" ("*" = any)
+    spec_format: string  // "OpenAPI", "JSON-Schema", "Custom", etc.
 }
 
 struct DriverMeta {
     id: string  // UUID for unique identification
     name: string  // Human-readable name
     version: string  // Semantic version, e.g. "1.0.0"
-    bindings: array[Binding]  // Supported bindings
-    target_llms: array[string]  // "*" or specific models like "claude-3", None for ToolDrivers
-    capabilities: array[string]  // e.g. "healthcheck", "autostart"
+    bindings: array[Binding]  // Capability + adapter combinations
+    target_llms: array[string]  // "*" or specific models like "claude-4", None for ToolDrivers
+    capabilities: array[string]  // Runtime features / mixins: "tcs", "healthcheck", "autostart"
 }
 
 struct DriverResponse {
