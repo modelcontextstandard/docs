@@ -5,7 +5,7 @@ sidebar_position: 5
 
 # 5 · Orchestrator
 
-An Orchestrator is not just a router -- it is an **interface author**. It constructs a new, curated tool interface by aggregating tools from multiple ToolDrivers, resolving name collisions, setting priorities, enriching descriptions, and deciding the order and density of tools presented to the LLM.
+An Orchestrator is a router in its core, but an **interface author** at the end. It constructs a new, curated tool interface by aggregating tools from multiple ToolDrivers, resolving name collisions, setting priorities, enriching descriptions, and deciding the order and density of tools presented to the LLM.
 
 ## When you need an Orchestrator
 
@@ -19,7 +19,7 @@ Typical scenarios:
 | Multiple capabilities | Different ToolDrivers for different capabilities | REST API + local filesystem + message bus |
 | Domain orchestration | A curated set of tools for a specific domain | Finance: REST (market data) + filesystem (reports) + FIX (trading) |
 
-The Orchestrator implements `MCSDriver`. It collects tools from all registered ToolDrivers, builds a unified prompt, and dispatches tool calls to the correct driver. For the AI client, it appears as a single driver. To be composable itself, the Orchestrator should also implement `MCSToolDriver` and expose the aggregated tool list via `list_tools()` -- this allows it to be embedded as a building block in a higher-level Orchestrator.
+The Orchestrator implements `MCSDriver`. It collects tools from all registered ToolDrivers, builds a unified prompt, and dispatches tool calls to the correct driver. For the AI client, it appears as a single driver. To be composable itself, the Orchestrator should also implement `MCSToolDriver`, this allows it to be embedded as a building block in a higher-level Orchestrator.
 
 ## Orchestrator responsibilities
 
@@ -46,14 +46,10 @@ AI Client
         └── FIX ToolDriver (FIX/TCP)
 ```
 
-## Orchestrators as ToolDrivers (recursive stacking)
-
-An Orchestrator that also implements `MCSToolDriver` becomes a building block for higher-level Orchestrators. This enables recursive stacking: a domain Orchestrator aggregates capability-level Orchestrators, each of which aggregates individual ToolDrivers.
-
 This works because the contract is uniform at every level:
 - The **client** needs `MCSDriver` -- it gets it from the top-level Orchestrator.
 - Each **Orchestrator** needs `MCSToolDriver` inputs -- it gets them from hybrid drivers *or* from other Orchestrators that also implement `MCSToolDriver`.
-- Each **hybrid driver** implements both interfaces, so it can participate at any level.
+- Each **MCS hybrid driver** implements both interfaces, so it can participate at any level.
 
 This is why hybrid is the practical default: a driver that implements both interfaces can be used standalone, stacked via an Orchestrator, or even used as a sub-Orchestrator -- without any code changes.
 
@@ -61,8 +57,9 @@ If an Orchestrator only implements `MCSDriver` (not `MCSToolDriver`), it serves 
 
 ## Summary
 
-| Component | Implements | LLM knowledge | Role |
+| Component | Implements | LLM knowledge | Typical use |
 |---|---|---|---|
-| **ToolDriver** | `MCSToolDriver` | None | Pure bridge; input to Drivers and Orchestrators |
-| **Driver (hybrid)** | `MCSDriver` + `MCSToolDriver` | Yes | Standalone or stackable; see [Section 4](4_ToolDriver_Adapter.md) |
-| **Orchestrator** | `MCSDriver` (optionally `MCSToolDriver`) | Yes | Interface author; aggregates, curates, and dispatches |
+| **ToolDriver** | `MCSToolDriver` | None | Pure bridge; used via Driver or Orchestrator |
+| **Driver (hybrid)** | `MCSDriver` + `MCSToolDriver` | Yes | Standalone use or via Orchestrator; wraps one ToolDriver 1:1 |
+| **Orchestrator** | `MCSDriver` (optionally `MCSToolDriver`) | Yes | Aggregates multiple ToolDriver |
+| **Adapter** | Internal (not MCS standard) | None | Swappable backend implementation inside a ToolDriver |

@@ -5,7 +5,7 @@ sidebar_position: 0
 
 # Model Context Standard (MCS)
 
-**Unlock the Power of LLMs: A lightweight standard for connecting LLMs to external systems through reusable drivers, not wrappers or bloated protocols**
+**Unlock the Power of LLMs: A lightweight standard for connecting LLMs to external systems (context) through reusable drivers**
 
 Connecting LLMs to external systems is still harder than it should be. Most current solutions rely on custom wrappers or complex function-calling protocols that require heavy infrastructure and manual parsing. MCS offers a simpler alternative.
 
@@ -45,7 +45,7 @@ Use autostart only when needed and do it safely. MCS makes suggestions how to im
 
 ### ✅ Compatible with MCP, but Cleaner
 MCP pioneered standardization in this area, MCS makes it practical.
-MCS drivers can wrap existing MCP endpoints (e.g. mcs-driver-mcp-stdio) to enable smooth migration.
+MCS drivers can wrap existing MCP endpoints (e.g. mcs-driver-mcp) to enable smooth migration.
 You get modularity, reuse and zero lock-in.
 
 ### ✅ Scales from Simple to Complex
@@ -57,7 +57,7 @@ Drivers handle the complexity, your app stays focused.
 
 You don’t need a complex setup to inject context into an LLM. No protocol, no wrapper server, no SDK. A well-described API and a model that can read it – that’s all it takes.
 
-This demo proves exactly that. It uses **no MCS driver at all**. Instead, it shows the raw principle that MCS is built on: if an LLM can read a function description and call the endpoint, the integration is already done.
+This demo proves exactly that. It shows the raw principle that MCS is built on. If an LLM can read a function description and call the endpoint, the integration is already done.
 
 We provide a tiny FastAPI service that exposes a **readable OpenAPI HTML spec** and a test function (`fibonacci`) that returns `2 × Fibonacci(n)`, helping detect hallucinations.
 
@@ -67,8 +67,8 @@ We provide a tiny FastAPI service that exposes a **readable OpenAPI HTML spec** 
 ### Deploy the Demo (VPS, Docker, Cloud)
 ```bash
 # clone on a VPS / cloud VM with a public DNS or IP
-$ git clone https://github.com/modelcontextstandard/modelcontextstandard.git
-$ cd modelcontextstandard
+$ git clone https://github.com/modelcontextstandard/python-sdk.git
+$ cd python-sdk
 $ docker compose -f docker/quickstart/docker-compose.yml up -d  # exposes :8000 on your public host
 # optional: use a tunnel such as ngrok or cloudflared if you do not have a static IP
 ```
@@ -95,7 +95,7 @@ The service exposes two endpoints:
 2. Ask your LLM to open /openapi-html, understand the interface.
 3. Ask the LLM to get you the fibonacci result for some value (e.g. 8).
 4. (if needed) In a second prompt, ask the LLM to build and visit the resulting URL (e.g. `...?n=8`).
-5. A correct result is 42. If the LLM says 21, it hallucinated.
+5. Correct result: 42. If the LLM says 21, it hallucinated—since the endpoint returns 2 × Fibonacci(n), to detect hallucinations.
 
 
 ### Test Results with Web-Enabled LLMs
@@ -149,7 +149,7 @@ sequenceDiagram
     end
 ```
 
-The driver never talks to the LLM directly. It only provides the spec and executes calls. Because the driver holds no mutable state, it is thread-safe by design. New transports and protocols only need a driver, not changes to the client or the LLM integration.
+The driver never talks to the LLM directly. It only provides the spec and executes calls. Because the driver holds no mutable state, it is thread-safe by design. New transports and protocols only need a driver, not changes to the client or the LLM integration. If one MCS driver is supported the rest will work out of the box.
 
 
 ## Why MCS exists: The Problem with Current Solutions
@@ -217,7 +217,7 @@ MCS addresses these pain points by recognizing that this is fundamentally a driv
 MCS trims function calling down to two building blocks:
 
 - **Spec:** Machine-readable function descriptions -- use standards if possible! OpenAPI, JSON Schema, GraphQL SDL, WSDL, gRPC/Protobuf, OpenRPC, EDIFACT/X12, or custom formats.
-- **Bridge:** Transport layers (HTTP, AS2, CAN, ...) -- handled by parsers.
+- **Bridge:** Transport layers (HTTP, AS2, CAN, ...) -- handled by adapters.
 
 Just like operating systems use device drivers to communicate with hardware, LLMs need interface drivers to communicate with external systems. 
 The key difference with MCS:
@@ -239,13 +239,13 @@ Instead of:
 
 MCS enables:
 
-`Your API (with standard spec) → MCS Driver → LLM`
+`Your API (with a standard) → MCS Driver → LLM`
 
-**The crucial difference:** The MCS driver can handle any REST API, not just one specific API. Point it to different OpenAPI specs, and it works universally without modification.
+**The crucial difference:** A specific MCS driver can handle any REST API, not just one specific API. Point it to different OpenAPI specs, and it works universally without modification.
 
 #### Security by Design
 
-- No custom protocols: Leverage HTTP's proven security model
+- No custom protocols: Leverage proven security model the same as the transport layer / underlying protocol uses
 - Optional autostart: Only when needed, containerized and sandboxed
 - Reduced attack surface: Fewer components, established security practices
 - Standard authentication: OAuth, API keys, JWT – use what already works
@@ -265,9 +265,10 @@ With MCS, developers get:
 #### Migration Path
 Already using MCP? MCS provides a smooth transition:
 
-- Wrap existing MCP servers as MCS drivers (mcs-driver-mcp-stdio)
+- Wrap existing MCP servers as MCS drivers (mcs-driver-mcp)
 - Gradual migration without breaking existing functionality
 - Immediate benefits for new integrations
+- Share the driver, so everyone can use it to connect to MCP-enabled APIs
 
 
 #### The Bottom Line
@@ -287,13 +288,6 @@ MCP pioneered the concept, but MCS makes it practical. While MCP requires rebuil
 | **Tooling** | Custom debugging/monitoring | Standard tools can be used |
 | **Integration Effort** | High (wrapper + client code) | Low (configure driver) |
 
-
-#### What This Means
-**For developers**, MCS delivers less code to write and maintain, faster integration with existing APIs, better security through proven protocols, and the freedom to focus on business logic instead of protocol details.
-
-**For organizations**, this translates to lower infrastructure costs, reduced security risks, faster time to market, and better resource utilization across development teams.
-
-MCS doesn't replace MCP, it evolves the concept by removing the barriers that make integration difficult. The result is a standard that's easier to adopt, safer to deploy, and simpler to maintain.
 
 
 ## Contributing: Building the Ecosystem Together

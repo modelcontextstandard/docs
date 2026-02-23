@@ -3,13 +3,13 @@ title: 10. LLM Prompt Patterns / Dynamic Optimization
 sidebar_position: 10
 ---
 
-# 10 · LLM Prompt Patterns and Dynamic Optimization (Informative)
+# 10 · LLM Prompt Patterns and Dynamic Optimization (Perspective)
 
 **Note**: This section describes experimental concepts and future possibilities that extend beyond the current MCS implementation.
 
-While outside the formal spec, MCS introduces a paradigm shift in how we think about LLM-system integration. The core insight: Since LLMs are programmed through natural language, and their reliability depends entirely on how well they follow prompts, the prompt itself becomes the primary optimization target.
+While outside the formal spec, MCS introduces a paradigm shift in how we think about LLM-system integration. The core insight: Since LLMs are programmed through natural language, and their reliability depends entirely on how well they follow prompts, the prompt itself becomes the primary optimization target like a firmware.
 
-## The Prompt as an Asset
+## The Prompt as an Asset (Firmeware)
 MCS elevates prompts from hardcoded strings to reusable, optimizable assets. When prompt engineering efforts (e.g., using DSPy for iterative optimization) are encapsulated within drivers, they become instantly reusable across all applications. This transforms prompt engineering from a per-project burden into a one-time investment with compounding returns.
 
 The traditional approach to prompt engineering has been fragmented and inefficient. Prompt hubs have existed for a while, offering collections of proven prompts, but they typically required manual integration. Developers had to find suitable prompts, adapt them to their specific needs, and wire them into their applications. A process repeated for every project and every model update.
@@ -38,7 +38,7 @@ MCS's prompt-provider approach, combined with optimization frameworks like DSPy,
 - **Cost structures** shift dramatically, why pay Anthropic's premium when a locally-run Llama or Mistral model performs just as reliably?
 - **Synthetic data generation** from reliable models like Kimi K2 enables training and distillation of tool-calling capabilities into smaller, faster models
 
-This isn't theoretical. The recent release of Kimi K2 demonstrates that matching Anthropic's tool-calling prowess is possible. With the right prompts and training approach, any model can excel at tool calling. At least be improved.
+This isn't theoretical. The release of Kimi K2 demonstrates that matching Anthropic's tool-calling prowess is possible. With the right prompts and training approach, any model may excel at tool calling. At least be improved.
 
 
 ## Three Building Blocks for Flexible Prompt Layers
@@ -48,7 +48,7 @@ To achieve true model-agnostic flexibility, MCS separates prompt logic into thre
 These define how tools are presented to the model. Different models respond better to different representations, some prefer JSON schemas, others work better with XML structures, and some excel with plain text descriptions. The template system allows the same tool to be presented optimally to each model.
 
 ```python
-# For GPT-4
+# For GPT
 template_gpt4 = """
 Available function: {name}
 Description: {description}
@@ -91,17 +91,24 @@ parsing_grok4 = {
 }
 ```
 
+Note the `fallback` pattern: the model was instructed to wrap tool calls in `<tool_call>` markers, but if it outputs raw JSON instead, the fallback catches it. This is already a form of **self-healing** -- see below.
+
 These three components form a complete prompt strategy for each model or model family. They define how the model is instructed, how its output is interpreted, and how the driver bridges both ends. This design enables flexible, model-specific prompt optimization without touching application or driver code.
 
 ### Self-Healing
 
 Because LLM output is always plain text, parsing can fail -- even when the model clearly intended a tool call. A JSON bracket might be missing, a field name misspelled, or the output wrapped in unexpected markdown fences. These are not logic errors but formatting errors, and they are predictable per model.
 
-Before signaling `call_failed` to the client, a driver should attempt to fix known formatting issues automatically. This is self-healing: the driver applies model-specific correction patterns (e.g. stripping markdown fences, fixing common JSON syntax errors, normalizing field names) and retries parsing on the corrected output.
+Before signaling `call_failed` to the client, a driver should attempt to fix known formatting issues automatically. This is self-healing: the driver applies model-specific correction patterns and retries parsing on the corrected output. Typical corrections include:
+
+- **Fallback patterns** (as shown above): the model ignores the instructed format and outputs raw JSON -- a secondary regex catches it.
+- **Stripping markdown fences**: the model wraps its JSON in ` ```json ... ``` `.
+- **Fixing common JSON syntax errors**: trailing commas, missing closing brackets, single quotes instead of double quotes.
+- **Normalizing field names**: the model writes `"function"` instead of `"tool"`.
 
 If self-healing succeeds, the call proceeds as if it was correctly formatted from the start -- the client never sees the intermediate failure. Only when all correction attempts fail does the driver return `call_failed = true` with a `retry_prompt` that instructs the LLM to try again.
 
-Self-healing is optional but recommended. It directly reduces the compound failure rate described above and is particularly valuable for models with known formatting quirks (e.g. Grok's tendency to output tool calls as plain text).
+Self-healing is optional but recommended. It directly reduces the compound failure rate described above and is particularly valuable for models with known formatting quirks.
 
 
 ## Dynamic Prompt Loading
@@ -113,7 +120,7 @@ provider = PromptProvider.from_url("https://prompt-registry.example/v1")
 driver = MCSDriver(spec_url=api_spec, prompt_provider=provider)
 
 # The driver automatically selects the best prompt configuration
-system_msg = driver.get_driver_system_message(model_name="gpt-4o-mini")
+system_msg = driver.get_driver_system_message(model_name="gpt-x")
 ```
 
 With versioning and checksums, clients can pin to tested prompt versions for reproducibility while still benefiting from improvements when ready to upgrade. Critical fixes for model quirks can be deployed instantly without touching application code.
@@ -161,7 +168,7 @@ Advanced implementations might use hybrid approaches, clustering related tools o
 
 ### 3. Curated Toolset Style
 
-Instead of exposing a full OpenAPI spec with dozens of endpoints, a driver can load a **curated toolset definition** that contains only the endpoints relevant to the use case. This has two benefits:
+Instead of exposing a full OpenAPI spec with dozens of endpoints, a driver can load a **curated toolset definition** that contains only the endpoints relevant to the use case. Assuming that this already will be the common case wiht ToolDrivers. This has two benefits:
 
 - **Token reduction**: A typical REST API might expose 40+ endpoints, but a specific use case often only needs 3-5. Sending the full spec wastes tokens and increases the chance of the LLM choosing an irrelevant tool.
 - **Custom descriptions**: The original API documentation is written for human developers, not for LLMs. A curated toolset can replace endpoint descriptions with LLM-optimized text that improves accuracy. This is what MCP does implicitly when someone writes a wrapper server with hand-crafted tool descriptions -- MCS makes it explicit and reusable without a wrapper.
@@ -180,7 +187,7 @@ Toolset definitions can be versioned via git, shared across teams, and distribut
 ## Model-Specific Optimization
 Different models excel with different prompt styles, and these differences go beyond mere preference. They can mean the difference between reliable execution and complete failure. These patterns have emerged:
 
-- **GPT-4** performs best with JSON schemas and explicit structural markers
+- **GPT-x** performs best with JSON schemas and explicit structural markers
 - **Claude** excels with XML-style formatting and clear behavioral instructions
 - **Llama-based models** often need more explicit examples and stronger guardrails
 - **Gemini** requires specific instructions to prevent premature tool announcements
@@ -225,7 +232,7 @@ Always design with flexibility in mind. External prompt overrides should be poss
 - **Custom optimizations** for specific use cases or domains
 - **Gradual migration** to dynamic prompt providers as they mature
 
-Think of prompts as instructions that program the model for specific tasks. Just as you might load different configurations for different environments, you load different prompts for different models. With this approach, even quirky models like Grok 4 can be programmed to behave reliably, turning their weaknesses into solved problems rather than ongoing frustrations.
+Think of prompts as instructions that program the model for specific tasks. Just as you might load different configurations for different environments, you load different prompts for different models. With this approach, even quirky models like Grok can be programmed to behave reliably, turning their weaknesses into solved problems rather than ongoing frustrations.
 
 ---
 

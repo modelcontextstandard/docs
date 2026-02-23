@@ -10,10 +10,10 @@ sidebar_position: 2
 
 Every MCS driver must implement **two mandatory capabilities**:
 
-1. **Expose**: Provide a machine-readable function description via `get_function_description()` and a ready-to-use system prompt via `get_driver_system_message()`. The system prompt wraps the function description with model-specific prompt guidance. `get_function_description()` gives the app developer the choice to build their own prompt instead (see Section 3 for why both are required, while only one would be mandatory).
-2. **Execute**: Handle structured LLM-emitted calls via `process_llm_response()`, which returns a `DriverResponse` containing the result and execution status. The driver parses the request, routes it through a bridge (HTTP, serial, message bus, etc.), and returns the raw result.
+1. **Expose**: Provide a machine-readable function description via `get_function_description()` and a ready-to-use system prompt via `get_driver_system_message()`. The system prompt wraps the function description with model-specific prompt guidance. `get_function_description()` gives the app developer the choice to build their own prompt instead (see [Section 3](3_Minimal%20Driver%20Contract/Minimal_Driver_Contract.md) for why both are required, while only one would be mandatory).
+2. **Execute**: Handle structured LLM-emitted calls via `process_llm_response()`, which returns a `DriverResponse` containing the result and execution status. The driver parses the request, routes it through a bridge (HTTP, serial, message bus, etc.), and returns the result.
 
-The complexity of a **MCS Driver** is mostly concentrated in the execution phase. Everything related to authentication, rate-limiting, retries, logging, or protocol-specific quirks is handled internally by the driver using existing transports and if available machine readable standard specs like OpenAPI.
+The complexity of an MCS driver is concentrated in the execution phase. Authentication, rate-limiting, retries, logging, and protocol-specific quirks are all handled internally by the driver, the client never sees them. The driver builds on existing transports and, where available, on machine-readable specifications like OpenAPI to derive tool definitions automatically.
 
 Drivers are initialized with configuration parameters through the constructor. This makes it easy to inject dependencies or load configuration dynamically at runtime.
 
@@ -23,13 +23,7 @@ The **client** acts as a coordinator. It retrieves the function specification fr
 
 Importantly, the client does not need to know how the driver works internally, which technology stack it uses or what prompts should be used.
 
-To handle multiple drivers efficiently and avoid format and tool name conflicts, MCS introduces the concept of an **Orchestrator**. The Orchestrator aggregates tools from multiple **ToolDrivers** (a specialized driver type that lists tools and executes them without direct LLM interaction), unifies their descriptions into a consistent format, and presents them as a single MCSDriver to the client.
-
-The Orchestrator is a MCS Driver itself, so it is transparent to the client.
-
-For the client, it is irrelevant whether it interacts with a single / multiple MCS Driver(s) or Orchestrator(s), as both adhere to the same interface. This allows mixing and matching components arbitrarily without requiring adjustments to the client's logic.
-
-This separation allows ToolDrivers to focus on technical bridging, while Orchestrators handle LLM-specific optimizations like prompt formatting also for a variety of LLMs.
+When multiple drivers need to work together, an **Orchestrator** aggregates their tools into a single, unified interface (see [Section 5](5_Orchestrator.md)). Because the Orchestrator itself implements `MCSDriver`, it is transparent to the client -- the same interface, regardless of how many drivers participate behind it. That also allows to stack drivers / orchestrators on top of each other to create a new driver with a different interface.
 
 
 ---
@@ -68,20 +62,14 @@ The driver parses the call, dispatches it over its bridge (e.g. HTTP, CAN-Bus, A
 
 In practice, a single user request may require multiple tool calls before the LLM can produce a final answer. The client therefore runs an iterative loop:
 
-```
-                    ┌───────────────────────────────────────────────┐
-                    │                                               ▼
-User ──► Client ──► LLM ──► process_llm_response() ──► DriverResponse
-                     ▲                                      │
-                     │                          response.messages
-                     │                            │         │
-                     │                      call_executed  no match
-                     │                      or call_failed    │
-                     │                            │      Final answer
-                     │     messages.extend(       │
-                     │       response.messages)    │
-                     │                            │
-                     └────────────────────────────┘
+```mermaid
+flowchart LR
+    User -->|prompt| Client
+    Client -->|messages| LLM
+    LLM -->|response| PLR["process_llm_response()"]
+    PLR --> DR{DriverResponse}
+    DR -->|"call_executed / call_failed<br/>append response.messages"| Client
+    DR -->|"no match → final answer"| User
 ```
 
 1. The client sends the conversation (system prompt + message history) to the LLM.
@@ -92,4 +80,4 @@ User ──► Client ──► LLM ──► process_llm_response() ──► D
 
 The driver is **stateless** -- all outcome information lives in the returned `DriverResponse`. The driver does not track conversation history; that remains the client's responsibility. The `messages` field shifts message formatting from the client to the driver, keeping client logic minimal while allowing arbitrarily complex multi-step interactions.
 
-A Proof of Concept with existing ChatModels can be found [here](https://github.com/modelcontextstandard#getting-started-experience-the-wow-moment-in-2-minutes).
+A Proof of Idea with existing ChatModels can be found [here](https://github.com/modelcontextstandard#quickstart-the-idea-in-under-2-minutes).

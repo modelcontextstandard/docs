@@ -13,7 +13,7 @@ The smallest canonical interface unit in MCS is the `MCSToolDriver`. It defines 
 - `list_tools()`: Returns a list of `Tool` objects (name, description, parameters).
 - `execute_tool(tool_name, arguments)`: Executes and returns the raw result.
 
-*The exact signatures are up to each SDK. The semantics **must** match.*
+Think of `list_tools()` as publishing an **API contract**: each `Tool` declares a method signature -- a name, a description of what it does, and the parameters it accepts. This is the interface that the LLM (indirectly, via the MCSDriver) and the Orchestrator work against. Everything downstream -- prompt generation, tool-call parsing, execution dispatch -- derives from this contract.
 
 A ToolDriver is focused solely on technical bridging. It has no knowledge of LLMs, prompts, or model-specific quirks. ToolDriver authors can focus entirely on the technical bridge -- an HTTP call, a filesystem operation, a CAN-Bus message -- without needing any AI knowledge. The LLM-facing logic lives in the `MCSDriver` layer (see below).
 
@@ -37,85 +37,68 @@ Executes the specified tool with the given arguments and returns the raw result.
 
 ### Why adapters exist
 
-When building drivers for different capability+transport combinations (e.g. csv-localfs, csv-http, pdf-localfs, pdf-http), code duplication emerges quickly:
+When building drivers for different capability+backend combinations (e.g. csv-localfs, csv-http, openapi-http, pdf-localfs, pdf-http), code duplication emerges quickly: the tool definitions, descriptions, and parsing logic are identical -- only the execution backend differs.
 
-- Identical tool signatures and function descriptions across transports
-- Identical parsing logic for specifications
-- Identical connection logic (timeouts, proxies, retries, headers, ...) across capabilities
-
-To eliminate this duplication, the ToolDriver delegates to two swappable building blocks:
-
-### SpecAdapter and TransportConnector
-
-1. **SpecAdapter** (format/semantics) -- converts a specification or domain description into standardized `Tool` objects. It knows nothing about runtime transport details.
-2. **TransportConnector** (I/O) -- encapsulates connection and execution logic (HTTP, local filesystem, S3, ...). It knows nothing about tool semantics.
-
-The ToolDriver composes both:
+To eliminate this duplication, the ToolDriver delegates execution to a swappable **adapter**. The ToolDriver owns the tool definitions and knows which operations exist. The adapter implements those operations against a specific backend.
 
 ```
 ToolDriver.execute_tool("write", {path, content})
-  └── self.transport.write(path, content)    // adapter interface (internal)
-        ├── LocalFsConnector.write()
-        ├── HttpConnector.write()
-        └── S3Connector.write()
+  └── self.adapter.write(path, content)    // adapter interface (internal)
+        ├── LocalFsAdapter.write()
+        ├── HttpAdapter.write()
+        └── S3Adapter.write()
 ```
 
-**Spec source and execution transport are independent dimensions.** A spec sitting on the local filesystem does not imply that calls execute locally. Equally, a spec loaded via HTTP may trigger execution through an entirely different connector.
+The ToolDriver itself is responsible for defining tools -- whether statically (e.g. a fixed set of CSV operations) or dynamically (e.g. parsing an OpenAPI specification). This is not the adapter's concern. The adapter only provides the execution backend.
 
 ### Two interface levels
 
 MCS has two distinct interface layers that must not be confused:
 
 - **MCS interfaces** (`MCSDriver`, `MCSToolDriver`) are the external contract for clients and orchestrators. The LLM and the client see only this level.
-- **Adapter interfaces** are internal technical contracts within a ToolDriver that make implementations swappable. They consist of methods like `read()`, `write()`, `list()`, `delete()` -- purely technical, no LLM awareness. Adapter interfaces are **not** part of the MCS standard; they are SDK and implementation concerns.
+- **Adapter interfaces** are internal technical contracts within a ToolDriver that make implementations swappable. Adapter interfaces are **not** part of the MCS standard; they are SDK and implementation concerns.
 
 ### Adapter consistency rule
 
-All adapters under a given ToolDriver must fulfill the same interface. The ToolDriver defines the tool API; different adapters provide different implementations of the same operations.
+If a ToolDriver exposes tools like `read`, `write`, `list`, and `delete`, then **every adapter** plugged into that ToolDriver must implement `read()`, `write()`, `list()`, and `delete()` -- the same internal interface, just against a different backend. The ToolDriver calls `self.adapter.write(...)` without knowing (or caring) whether the adapter talks to the local filesystem, an SMB share, or an HTTP endpoint.
 
-When the semantic gap between two backends is small, they can share a ToolDriver and adapter interface:
+This works well when the backends share similar semantics:
 
-- A `filesystem` ToolDriver exposes hierarchical paths, directories, and shell-like operations. It fits localfs, SMB, FTP, and SFTP because the fundamental semantics are similar.
-- An `objectstore` ToolDriver exposes keys and prefixes. It fits S3, GCS, and Azure Blob.
+- A `filesystem` ToolDriver exposes hierarchical paths, directories, and shell-like operations. LocalFS, SMB, FTP, and SFTP all fit because they share this fundamental model.
+- An `objectstore` ToolDriver exposes flat keys and prefixes. S3, GCS, and Azure Blob all fit.
 
-When the semantic gap is large, a separate ToolDriver with its own tool API is the cleaner choice. S3 *can* be exposed as a filesystem adapter, but this is emulation with explicit caveats: `rename` becomes copy+delete, `mkdir` may be a no-op, listing may be eventually consistent. Such emulation is valid but must be clearly documented -- through tool descriptions, capability flags, or well-defined errors.
+When the semantic gap between two backends is large, forcing them into the same adapter interface creates a leaky abstraction. S3 *can* be exposed as a filesystem adapter, but it is emulation: `rename` becomes copy+delete, `mkdir` may be a no-op, listing may be eventually consistent. Such emulation is valid when the trade-off is acceptable, but the caveats must be clearly documented -- through tool descriptions, capability flags, or well-defined errors. When the gap is too large, a separate ToolDriver with its own tool API is the cleaner choice.
 
 ## From ToolDriver to Hybrid Driver
 
 The recommended development workflow is bottom-up:
 
-**Step 1 -- Write the ToolDriver.** Implement `list_tools()` and `execute_tool()` for your capability. This is pure technical work: read a spec, map calls, handle errors. No LLM knowledge required.
+**Step 1 -- Define the Adapter interface.** Decide which operations the capability requires (`read()`, `write()`, `list()`, `delete()`, ...) and define them as an abstract interface. This is the contract that all backend implementations must fulfill, for the given ToolDriver.
 
-**Step 2 -- Write the Driver.** Create a class that implements both `MCSDriver` and `MCSToolDriver`. Internally, it delegates the ToolDriver methods (`list_tools`, `execute_tool`) to the ToolDriver from Step 1 and adds the three LLM-facing methods (`get_function_description`, `get_driver_system_message`, `process_llm_response`). This is the **hybrid driver** -- the recommended default.
+**Step 2 -- Implement the Adapter.** Write a concrete implementation of that interface against your target backend (e.g. local filesystem, HTTP, S3). Each backend gets its own adapter class behind the same interface.
 
-The MCSDriver is typically a **thin wrapper** around a ToolDriver: same tool semantics, just made LLM-ready through prompt formatting, output parsing, and self-healing. A driver *may* curate, rename, or merge tools, but the default case is 1:1 pass-through. Conceptually, it is a single-driver orchestrator: one driver wrapping one ToolDriver.
+**Step 3 -- Write the ToolDriver.** For each method in the adapter interface, create a corresponding `Tool` in `list_tools()` -- with a name, description, and parameters. `execute_tool()` maps the incoming tool name to the matching adapter method and delegates. No LLM knowledge is required up to this point.
 
-This two-step approach produces a driver that works in both modes:
+**Step 4 -- Write the Driver.** Create a class that implements both `MCSDriver` and `MCSToolDriver`. Internally, it delegates the ToolDriver methods (`list_tools`, `execute_tool`) to the ToolDriver from Step 2 and then adds the three LLM-facing methods (`get_function_description`, `get_driver_system_message`, `process_llm_response`). This is the **hybrid driver** -- the recommended default.
 
-- **Standalone**: An AI client calls `get_driver_system_message()` + `process_llm_response()` directly.
-- **Via Orchestrator**: An orchestrator calls `list_tools()` + `execute_tool()` and handles the LLM interaction itself.
+The MCSDriver is typically a **thin wrapper** around a ToolDriver: same tool semantics, just made LLM-ready through prompt formatting, output parsing, and optional self-healing. A driver *may* curate, rename, or merge tools, but the default case is 1:1 pass-through. 
+
+Each step produces a reusable building block. If an adapter for your backend already exists, start at Step 3. If the adapter interface and ToolDriver already exist and you just need a new backend, write only the adapter (Step 2). A new capability on an existing transport (e.g. PDF over HTTP when CSV over HTTP already exists) means reusing the adapter and writing a new ToolDriver + Driver.
+
+This layered approach produces a hybrid driver that a client can use directly via `get_driver_system_message()` + `process_llm_response()`, and that can also be composed into larger setups (see [Section 5](5_Orchestrator.md)).
 
 ## Why hybrid is the default
 
 The hybrid pattern (implementing both `MCSDriver` and `MCSToolDriver`) is the recommended default because it maximizes composability:
 
 - **Standalone**: A client calls the driver directly via the `MCSDriver` interface (`get_driver_system_message()` + `process_llm_response()`).
-- **Stacked**: An Orchestrator calls `list_tools()` + `execute_tool()` on the same driver and handles the LLM response itself.
-- **Chained by client**: A client can hold multiple drivers and pass each LLM response through them sequentially. Because every driver implements `MCSDriver`, the client logic is identical regardless of how many drivers participate.
+- **Stacked**: An Orchestrator calls `list_tools()` + `execute_tool()` on the same driver and handles the LLM response itself (see [Section 5](5_Orchestrator.md)).
+- **Chained by client**: A client can hold multiple drivers and pass each LLM response through them sequentially. Because every driver implements `MCSDriver`, the client logic is identical regardless of how many drivers participate (but toolnameing conflicts may need to be resolved). 
 
 This uniformity is the key design goal: the client never needs to know whether it talks to a single driver, a hybrid, or an orchestrator wrapping dozens of ToolDrivers. The interface is always `MCSDriver`.
 
 ### Unknown tool calls: pass-through, not failure
 
-When a standalone driver parses a valid JSON tool call but does **not** recognize the tool name, it must behave as if no tool call was detected at all -- return an empty `DriverResponse()` (no flags set), just like it would for a regular text response. From the outside, the LLM output passes through unchanged. This is critical for sequential client setups. The client passes the same LLM response to each driver in turn. If driver A does not recognize the tool, it acts as if nothing happened. The client then tries driver B, and so on. Only if *no* driver claims the call should the client treat it as unresolved or not a tool call emitted by the LLM.
+When a driver parses a valid JSON tool call but does **not** recognize the tool name, it must behave as if no tool call was detected at all -- return an empty `DriverResponse()` (no flags set), just like it would for a regular text response. From the outside, the LLM output passes through unchanged. This is critical for sequential client setups. The client passes the same LLM response to each driver in turn. If driver A does not recognize the tool, it acts as if nothing happened. The client then tries driver B, and so on. Only if *no* driver claims the call should the client treat it as unresolved or not a tool call emitted by the LLM.
 
 An Orchestrator follows the same rule. From the client's perspective it is just another `MCSDriver` -- and it may itself be embedded in a higher-level Orchestrator. If the tool name is not found in any registered ToolDriver, the Orchestrator returns an empty `DriverResponse()`, just like any standalone driver would. The decision of what to do when *no* driver claims a call is always the client's responsibility.
-
-## Summary
-
-| Component | Implements | LLM knowledge | Typical use |
-|---|---|---|---|
-| **ToolDriver** | `MCSToolDriver` | None | Pure bridge; used via Driver or Orchestrator |
-| **Driver (hybrid)** | `MCSDriver` + `MCSToolDriver` | Yes | Standalone use or via Orchestrator; wraps one ToolDriver 1:1 |
-| **Orchestrator** | `MCSDriver` (optionally `MCSToolDriver`) | Yes | Aggregates multiple ToolDrivers; see [Section 5](5_Orchestrator.md) |
-| **Adapter** | Internal (not MCS standard) | None | Swappable transport/spec implementation inside a ToolDriver |

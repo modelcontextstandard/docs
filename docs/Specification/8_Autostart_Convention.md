@@ -5,17 +5,16 @@ sidebar_position: 8
 
 # 8 · Autostart Convention
 
-Autostart is mostly obsolete in MCS, as existing interfaces (e.g., HTTP endpoints) are used directly. For local systems, employ direct code (e.g., mcs-driver-filesystem-localfs) without spinning up extra processes.
+MCS uses established interfaces directly -- HTTP endpoints that already run on servers, local libraries called in-process. There is no need to start an extra server just to talk to a tool. You would never spin up a FastAPI server to access the local filesystem, yet that is exactly what MCP does with its STDIO-based servers. MCS eliminates that layer entirely.
 
-In MCS, the autostart functionality, key to MCP's popularity, is largely unnecessary. You'd never think to start a FastAPI server for local filesystem access, yet that's common in MCP. MCS focuses on established interfaces: HTTP endpoints already run on servers, and local operations use direct code, eliminating additional processes.
+**Example -- Context7:** The Context7 MCP server ([GitHub](https://github.com/upstash/context7)) provides access to LLM developer documentation via [context7.com](https://context7.com). It is already an HTTP API. Instead of starting a local MCP proxy, an MCS driver can bind to it directly. Context7 does not publish an OpenAPI spec, but one can be [derived from its MCP tool descriptions](https://gist.githubusercontent.com/bizrockman/7fbca8d1c3d30ef9c54db6f7190c6166/raw/4236a47e555552bea0c00e1384964a1ea0d568ae/context7_openapi_llm_friendly.json) and hosted on a CDN. The client swaps a URL -- no additional server to develop, host, or maintain.
 
-This makes integration more intuitive and secure, no extra server logic to wrap existing APIs. Anything accessible via HTTP, local methods, or standards can be used directly.
+This illustrates a broader point: when the underlying service already speaks an established standard (HTTP, OpenAPI, gRPC, ...), MCS simply connects to it. The autostart problem disappears.
 
-**Example:** The Context7 MCP server [7](https://github.com/upstash/context7) provides access to LLM developer docs [8](https://context7.com). It's already an API, so instead of starting a local MCP server, bind it via an MCS driver. Context7 lacks an OpenAPI spec, but create one from its MCP tool description and host it on a CDN [9](https://gist.githubusercontent.com/bizrockman/7fbca8d1c3d30ef9c54db6f7190c6166/raw/4236a47e555552bea0c00e1384964a1ea0d568ae/context7_openapi_llm_friendly.json). Context7 becomes MCS-compatible without extra infrastructure.
+### When autostart is still needed
 
-This highlights OpenAPI's advantage: A simple alternative description suffices—extend, simplify, or LLM-optimize it. Clients swap a URL; no development, hosting, or maintenance for additional servers, especially thin wrappers.
+In rare cases a driver may need to spin up local infrastructure -- for example, launching a Docker container that provides a database or a sandboxed runtime. For this, MCS offers an optional mixin:
 
-Thus, local autostart is fully eliminated. However, if a driver needs to spin up local infrastructure, it's optional via the SupportsAutostart mixin:
 ```python
 from abc import ABC, abstractmethod
 
@@ -25,10 +24,11 @@ class SupportsAutostart(ABC):
         pass
 ```
 
-No concrete reference implementation exists yet, but the concept is clear: The driver defines start parameters (e.g., for a Docker container), and a framework or Orchestrator launches it automatically on demand. Users might just provide the Docker image name, but execution and binding happen in the background. Resulting in a better Plug & Play experience.
+No reference implementation exists yet, but the intent is straightforward: the driver declares what it needs (e.g. a Docker image name), and the client or Orchestrator launches it on demand, isolates ports, and passes the resulting URL back to the driver for use in `list_tools()` or `get_function_description()`.
 
-If autostart is used, it must be virtualized for safety. Driver authors should specify how systems start containers, including guidelines for container developers to ensure uniform startup. For a REST-HTTP driver with autostart, include management to launch containers, isolate ports, and pass URLs back to the driver for populating get_function_description() or list_tools().
+Two constraints apply:
 
-This is safer than MCP's implicit STDIO autostart, avoiding privilege risks. Controlled, reproducible, and secure through process virtualization. Local environments need no manual config, they're orchestrated.
+1. **Virtualization is mandatory.** Autostarted processes must run inside containers or sandboxes -- never as bare host processes. This avoids the privilege escalation risks inherent in MCP's implicit STDIO autostart.
+2. **Uniform startup conventions.** Driver authors should document how their containers are started so that any client can handle them the same way.
 
-But really most of the time you will not need this anymore.
+The result is controlled, reproducible, and secure. But for the vast majority of drivers this section is irrelevant -- they connect to something that already exists.

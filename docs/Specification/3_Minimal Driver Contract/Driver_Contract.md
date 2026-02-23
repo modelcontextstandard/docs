@@ -45,6 +45,7 @@ abstract class MCSDriver {
 ```
 
 ### ToolDriver (for Orchestration)
+(see [Section 4](4_ToolDriver_Adapter.md))
 
 ```pseudo
 struct ToolParameter {
@@ -86,6 +87,8 @@ class BasicOrchestrator extends MCSDriver {
 ```
 
 For the client, it is irrelevant whether it interacts with a single / multiple MCS Driver(s) or Orchestrator(s), as both adhere to the same interface. This allows mixing and matching components arbitrarily without requiring adjustments to the client's logic.
+
+It is also suggested to let the orchestrator implement the ToolDriver interface, so it can be used as a ToolDriver in a higher level orchestrator.
 
 ### Mixins for Capabilities
 

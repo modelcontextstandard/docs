@@ -31,7 +31,7 @@ Modern AI frameworks often provide parsers, but not standardized descriptions or
 
 The Model Context Protocol (MCP) addressed this by introducing the first open standard to connect LLMs with external systems. OpenAI followed a similar idea with "Plugins" (discontinued) and "Actions" for Custom GPTs long before that, but never published it as a general concept.
 
-However, MCP added a full protocol stack, along with new complexity and security implications. As of 2025, recent updates to MCP include OAuth Resource Servers, mandatory Resource Indicators (RFC 8707), and streamable HTTP as a new transport mechanism (released March 2025). Despite these advancements, critiques highlight ongoing issues like prompt injection weaknesses (reported May 2025) and vulnerabilities such as CVE-2025-49596 (RCE in MCP Inspector, June 2025). 
+However, MCP added a full protocol stack, along with new complexity and security implications. Updates throughout 2025 and into 2026 -- OAuth 2.1 with PKCE, mandatory Resource Indicators (RFC 8707), streamable HTTP transport -- have improved its robustness, but the fundamental attack surface of a new protocol remains. By early 2026, the ecosystem has accumulated over 50 documented vulnerabilities (13 critical), including remote code execution chains, cross-client data leaks, and tool poisoning -- where malicious instructions hidden in tool descriptions are invisible to users but acted on by models [VulnerableMCP](https://vulnerablemcp.info/). Academic analysis confirmed 7.2% of servers exhibit general security flaws and 5.5% show MCP-specific tool-poisoning vulnerabilities [Arxiv 2504.03767](https://arxiv.org/abs/2504.03767).
 
 Much of the effort that followed focused on building wrappers around APIs that could already be used directly by LLMs, as demonstrated in the MCS proof of concept. This wrapper anti-pattern is increasingly recognized in the community [8](https://www.jlowin.dev/blog/stop-converting-rest-apis-to-mcp) [9](https://www.kylestratis.com/posts/stop-generating-mcp-servers-from-rest-apis/).
 
@@ -39,7 +39,7 @@ Critically, MCP often reimplements features the web has solved decades ago. Take
 
 Despite this, MCP succeeded, not because of elegance, but because it is the first real standard in this space. And a standard was needed.
 
-Useful features like autostarting MCP servers were not design decisions, but emerged from practical needs when using the STDIO transport layer. Making a core benefit for some developers a side effect not a core of MCP itself.
+Useful features like autostarting MCP servers were not design decisions, but emerged from practical needs when using the STDIO transport layer. Making a core benefit for some developers a side effect not a core of MCP itself. Seems nice in the context of MCP, but makes no sense to call local resources by spinning up one or multiple servers with user privileges.
 
 MCS now distills this all down to the essentials. What is actually required to connect an LLM to external systems in a standardized and reusable way.
 
@@ -49,7 +49,7 @@ A MCS driver must expose a function specification that LLMs can consume. Most mo
 
 The parser is the other half of the equation. It bridges the LLM’s output to real-world execution by scanning for and dispatching structured calls.
 
-Previously, function implementations were written from scratch for every use case. But with MCS generalization is key. If a REST call works for one service, it can be reused for all REST-over-HTTP services.
+Previously, function implementations were written from scratch for every use case. But with MCS generalization is key. If a REST call works for one service, it can be reused for all REST services.
 
 MCS generalizes function calling for a given protocol over a specific transport layer in one driver.
 
@@ -64,7 +64,7 @@ MCS follows a standard-first principle: if an established specification format e
 * EDIFACT/X12 schemas -- EDI-based B2B interfaces
 * Custom formats -- when no standard applies
 
-MCS does not prescribe a format -- it prescribes the driver contract.
+MCS does not prescribe a format -- it prescribes the driver contract. The format can even be changed to address the capabilities of the connected LLM.
 
 ## What this enables
 
@@ -72,8 +72,8 @@ The driver contract creates something that didn't exist before: a clear division
 
 Because each driver encapsulates specification, prompt logic, and execution behind a stable interface, roles can specialize independently. Technical engineers build ToolDrivers for specific protocols without needing AI knowledge. Prompt engineers optimize model-specific instructions inside drivers, making their work reusable across every application that uses that driver. AI application developers pick drivers and manage the conversation loop -- without understanding the underlying protocol or investing in prompt engineering.
 
-Prompt engineering, in particular, changes from a per-project cost into a one-time investment with compounding returns. When someone improves the prompts inside a driver, every application using it benefits immediately. Combined with dynamic prompt loading (Section 10), prompt configurations become versionable, tradeable artifacts.
+Prompt engineering, in particular, changes from a per-project cost into a one-time investment with compounding returns. When someone improves the prompts inside a driver, every application using it benefits immediately. Combined with dynamic prompt loading (Section 10[10_LLM_Prompt_Patterns/LLM_Prompt_Patterns.md]), prompt configurations become versionable, tradeable artifacts.
 
-Because MCS drivers are standard libraries -- not separate services -- they integrate into existing toolchains: package registries, CI/CD pipelines, monitoring, access control. No special middleware, no dedicated protocol servers, no LLM-specific security layer. The LLM integration fits into the existing software architecture like any other module.
+Because MCS drivers are standard libraries -- not separate services -- they integrate into existing toolchains: package registries, CI/CD pipelines, monitoring, access control. The LLM integration fits into the existing software architecture like any other module.
 
-This is the ecosystem MCS is designed to enable. Section 11 explores it in detail.
+This is the ecosystem MCS is designed to enable. Section 11[11_Ecosystem_Division_of_Labor.md] explores it in detail.
