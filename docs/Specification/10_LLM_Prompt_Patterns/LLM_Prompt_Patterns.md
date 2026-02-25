@@ -95,6 +95,81 @@ Note the `fallback` pattern: the model was instructed to wrap tool calls in `<to
 
 These three components form a complete prompt strategy for each model or model family. They define how the model is instructed, how its output is interpreted, and how the driver bridges both ends. This design enables flexible, model-specific prompt optimization without touching application or driver code.
 
+
+## PromptStrategy: Unifying the Building Blocks
+
+The three building blocks above -- tool description templates, usage instructions, and parsing rules -- share a fundamental constraint: **they must be consistent with each other.** If the prompt tells the LLM to output JSON, the parser must expect JSON. If the prompt uses XML markers, the parser must match those markers. Mismatches between instruction and parsing cause silent failures that are extremely hard to debug.
+
+The `PromptStrategy` abstraction formalizes this insight by treating the three components as a single **codec**: it **encodes** tools and instructions into the prompt, and **decodes** the LLM response in the same format. Whoever defines the prompt format also defines the parser -- they are inseparable.
+
+```
+┌─────────────────────────────────────────────────────┐
+│              PromptStrategy (Codec)                  │
+│                                                     │
+│  ┌─────────────────┐    ┌───────────────────────┐   │
+│  │  Encode          │    │  Decode               │   │
+│  │                 │    │                       │   │
+│  │  format_tools() │    │  parse_tool_call()    │   │
+│  │  call_example() │    │  healing rules        │   │
+│  │  system_template│    │  field aliases        │   │
+│  └─────────────────┘    └───────────────────────┘   │
+│                                                     │
+│  Configuration: TOML file (no hardcoded strings)    │
+└─────────────────────────────────────────────────────┘
+```
+
+### Key Properties
+
+1. **Prompt and parser are always consistent.** A `JsonPromptStrategy` instructs the LLM to output JSON and parses JSON. An `XmlPromptStrategy` would instruct XML and parse XML. There is no way to accidentally mismatch instruction and parser because both live in the same object.
+
+2. **Zero hardcoded prompt text.** All strings that reach the LLM -- the system template, the call example, retry prompts, even the healing regex rules -- are loaded from external TOML configuration files. Python code contains only logic (serialization, parsing, regex application), never prompt text.
+
+3. **Hot-swappable without code changes.** Switching from JSON to XML format means loading a different TOML file, not changing driver code. Prompt improvements, healing rules for new model quirks, or entirely new formats can be deployed by updating a text file.
+
+4. **Cascading configuration.** The strategy loads a package-bundled default TOML, which can be overridden by a project-local TOML. New entries are added; existing entries are replaced. This allows fine-tuning prompts for specific models or use cases without forking the driver.
+
+### Configuration via TOML
+
+A strategy's TOML file defines every text element:
+
+```toml
+[system_message]
+template = """
+You are a helpful assistant with access to these tools:
+{tools}
+When you need to use a tool, respond with ONLY this format:
+{call_example}
+"""
+
+[call_example]
+template = '{"tool": "tool-name", "arguments": {"key": "value"}}'
+
+[parsing]
+tool_field_aliases = ["tool", "name"]
+
+[retry_prompts]
+no_tool_field = "Return a JSON object with a 'tool' field."
+unknown_tool = "No tool '{tool_name}' found. Available: {available}."
+
+[[healing]]
+pattern = '```\w*\s*\n?'
+replacement = ''
+comment = "Strip opening markdown fences"
+```
+
+This separation of text from code has a practical consequence: prompt engineers can iterate on prompt wording, healing patterns, and retry messages without touching Python/TypeScript code -- and without requiring a new release of the driver package.
+
+### Relationship to DriverBase
+
+The `DriverBase` class in the Python SDK consumes a `PromptStrategy` and wires it into the `MCSDriver` contract:
+
+- `get_function_description()` calls `strategy.format_tools()`
+- `get_driver_system_message()` fills `strategy.system_template` with tools and call example
+- `process_llm_response()` calls `strategy.parse_tool_call()` and handles the result
+
+Concrete drivers like `RestDriver`, `FilesystemDriver`, or orchestrators inherit from `DriverBase` and only implement `list_tools()` and `execute_tool()`. All LLM-facing logic -- prompt generation, response parsing, healing, retry handling -- is shared through the strategy, eliminating code duplication across drivers.
+
+
 ### Self-Healing
 
 Because LLM output is always plain text, parsing can fail -- even when the model clearly intended a tool call. A JSON bracket might be missing, a field name misspelled, or the output wrapped in unexpected markdown fences. These are not logic errors but formatting errors, and they are predictable per model.

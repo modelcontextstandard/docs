@@ -48,6 +48,8 @@ MCS model:      Agent → execute_tool("mail.list", ...) → Driver (has credent
 
 This is not a policy or a convention, it is an architectural property of the driver contract. As long as the client does not expose its own internals to the LLM, the credentials configured in the driver constructor are unreachable from the agent's perspective.
 
+Because MCS builds on existing standards (HTTP, OAuth, mTLS, API keys, ...), the driver inherits the security model of the underlying transport without requiring new infrastructure. An HTTP-based driver benefits from the same TLS encryption, API gateway policies, and OAuth2 token flows that protect any other API client in the organization. The credential isolation described above then adds a layer on top: even if the transport is secure, the agent still cannot see *which* credentials are being used or extract them for other purposes. The result is defense in depth -- the transport secures the wire, and the driver contract secures the boundary between agent and secrets.
+
 ## User consent (open design point)
 
 MCS currently does not standardize a built-in user-consent mechanism ("approve this tool execution before it runs"). This is a deliberate choice: the right consent UX depends on the client (TUI, GUI, batch), the environment, and the risk profile of the tools involved.
