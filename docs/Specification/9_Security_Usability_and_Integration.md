@@ -28,11 +28,33 @@ MCS expects driver configuration to happen via the **constructor** (see [Section
 
 Where credentials are stored (keychain, vault, env injection in CI/CD, ...) and which policies apply is a client and deployment concern. MCS does not prescribe a credential management strategy.
 
+## Credential isolation: the driver as a trust boundary
+
+In most current agent frameworks, an LLM agent invokes external tools through shell execution, for example `exec("himalaya list")` to read e-mail via IMAP. The agent process has access to the same filesystem, environment variables, and secrets as the tool it is calling. Even container-based sandboxing does not solve this. The tool needs the credentials to function, so they must be present inside the sandbox. The agent can read them at any time -- `cat ~/.config/himalaya/.passwd` is one shell command away.
+
+MCS eliminates this class of exposure structurally. The driver holds credentials internally, received through its constructor and configured by the operator. The agent never sees them. It calls `execute_tool("mail.list", {...})` and receives results -- nothing more. There is no shell, no filesystem path, and no environment variable the agent could inspect to extract secrets.
+
+This has a direct consequence for **prompt injection resilience**. Even if an attacker succeeds in hijacking the agent's instructions, making it call unintended tools or pass crafted arguments, the credentials remain inaccessible. The agent can be tricked into *using* a tool, but it cannot be tricked into *leaking* the secrets behind it. The driver acts as a structural firewall that holds even in the worst case of a successful injection.
+
+Consider the contrast with shell-based tool execution:
+
+```
+Shell model:    Agent → exec("tool ...") → shell (has credentials) → tool
+                Agent → exec("cat .passwd") → credentials leaked
+
+MCS model:      Agent → execute_tool("mail.list", ...) → Driver (has credentials) → API
+                Agent has no path to credentials
+```
+
+This is not a policy or a convention, it is an architectural property of the driver contract. As long as the client does not expose its own internals to the LLM, the credentials configured in the driver constructor are unreachable from the agent's perspective.
+
 ## User consent (open design point)
 
 MCS currently does not standardize a built-in user-consent mechanism ("approve this tool execution before it runs"). This is a deliberate choice: the right consent UX depends on the client (TUI, GUI, batch), the environment, and the risk profile of the tools involved.
 
-The architecture already provides a natural seam for consent: the Orchestrator parses the LLM output, extracts the tool name and arguments, and calls `execute_tool()` as a discrete step. A consent check fits naturally between parse and execute. Standalone drivers that use `process_llm_response()` have no such seam today, but the capability/mixin system can provide one if the ecosystem converges on common patterns (see [Section 14](14_Next_Steps.md) for ongoing discussion).
+The architecture already provides a natural seam for consent: the Orchestrator parses the LLM output, extracts the tool name and arguments, and calls `execute_tool()` as a discrete step. A consent check fits naturally between parse and execute.
+
+The current design direction is a **consent mixin** (e.g. `SupportsConsent`). When a driver or orchestrator enables this capability, it signals pending tool calls to the client before execution -- including the tool name, arguments, and an optional timeout. The client presents the request to the user and either confirms or denies. If consent is not granted within the timeout, the tool call is aborted and the driver returns an error via `DriverResponse` (with `call_failed = true` and an appropriate `call_detail`). This keeps consent opt-in, driver-controlled, and compatible with all client types (TUI, GUI, batch). The mixin system can provide one solution if the ecosystem converges on common patterns (see [Section 14](14_Next_Steps.md) for ongoing discussion).
 
 ## Beyond LLM integration: two perspectives
 
