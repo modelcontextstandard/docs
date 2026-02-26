@@ -287,7 +287,7 @@ MCP pioneered the concept, but MCS makes it practical. While MCP requires rebuil
 | **Security Model** | New attack surfaces | Proven HTTP security |
 | **Tooling** | Custom debugging/monitoring | Standard tools can be used |
 | **Integration Effort** | High (wrapper + client code) | Low (configure driver) |
-| **Credential Isolation** | Agent sees server secrets | Driver holds secrets, agent sees only results |
+| **Credential Isolation** | Server holds secrets, agent sees only results | Driver holds secrets, agent sees only results |
 
 
 
