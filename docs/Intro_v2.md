@@ -195,8 +195,8 @@ response = driver.process_llm_response(llm_output)
 Three lines of code. No wrapper server, no protocol, no prompt engineering.
 
 - [Python SDK & Examples](https://github.com/modelcontextstandard/python-sdk)
-- [Full Specification](./Specification/1_Overview)
-- [Building a Custom Driver](./Specification/4_ToolDriver_Adapter)
+- [Full Specification](https://github.com/modelcontextstandard)
+- [Building a Custom Driver](https://github.com/modelcontextstandard)
 
 
 ## Where MCS Stands Today
