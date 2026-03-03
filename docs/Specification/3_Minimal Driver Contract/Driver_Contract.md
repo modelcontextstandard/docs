@@ -56,9 +56,13 @@ struct ToolParameter {
 }
 
 struct Tool {
-    name: string
-    description: string
-    parameters: array[ToolParameter]
+    name: string                        // machine identifier (OpenAPI operationId / MCP name)
+    title?: string = null               // optional short human-readable label (OpenAPI summary / MCP title)
+    description?: string = null         // detailed text forwarded to the LLM (may contain prompt-engineering instructions)
+    parameters: array[ToolParameter] = []
+
+    // Invariant: at least one of title or description must be non-empty.
+    // When only title is provided, description is auto-filled from title.
 }
 
 abstract class MCSToolDriver {
