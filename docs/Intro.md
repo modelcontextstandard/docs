@@ -31,11 +31,14 @@ MCS treats LLM integration as exactly that: a driver problem. Just like your OS 
 
 ```
 Today:    Your API → MCP Wrapper Server → MCP Client → LLM
-With MCS: Your API (with OpenAPI spec) → MCS Driver → LLM
+With MCS: Your API → MCS Driver → LLM
 ```
 
 **The crucial difference:** One REST-HTTP driver handles *every* REST API. Point it to a different OpenAPI spec, and it just works. No new wrapper, no new server, no new code.
 
+And here's what OpenAPI gave us years ago: you can mix and match tools from different APIs into a single spec file -- your toolset, your descriptions, your rules. Save that file, point the driver to it. Done. One file, any LLM.
+
+But REST is just the beginning. GraphQL, MQTT, CAN-Bus in automotive, EDI in supply chains, OPC-UA and SPS/PLC in manufacturing -- the world runs on protocols, and every one of them is a driver away. Connect all of them to your LLM with MCS.
 
 ## What You Get
 
