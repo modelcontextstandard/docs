@@ -28,6 +28,6 @@ Before diving into MCS specifics, it's crucial to understand the fundamental con
    
    **Not on**: The protocol, framework, or tooling used. These are merely implementation details.
 
-6. **The Driver Analogy**: If you think of this bridge in terms of protocol and transport, it's analogous to a driver in an operating system. It abstracts the complexity of hardware (external systems) from the kernel (LLM), providing a standardized interface.
+6. **The Driver Analogy**: If you think of this bridge in terms of capability and adapter, it's analogous to a driver in an operating system. It abstracts the complexity of hardware (external systems) from the kernel (LLM), providing a standardized interface.
 
-**This is what MCS standardizes**: Not the protocol or transport (those already exist), but the contract for these "drivers" that bridge LLMs to external systems. MCS acknowledges that the quality of integration depends primarily on the model and prompt quality, not on inventing new protocols, tools or frameworks.
+**This is what MCS standardizes**: Not the capability or transport (those already exist), but the contract for these "drivers" that bridge LLMs to external systems. MCS acknowledges that the quality of integration depends primarily on the model and prompt quality, not on inventing new protocols, tools or frameworks.

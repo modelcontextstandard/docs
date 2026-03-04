@@ -70,7 +70,7 @@ Each of these can develop at its own pace, by different people, with different e
 
 The naming convention exists primarily for **discoverability** -- on two levels:
 
-1. **Package registries** (PyPI, npm, crates.io): A developer searches `mcs-driver-` and immediately finds all available drivers. `mcs-driver-pdf` finds all PDF drivers regardless of variant or type. The convention ensures that web-based package browsers -- which often cannot evaluate capability metadata -- still deliver meaningful listings.
+1. **Package registries** (PyPI, npm, crates.io): A developer searches `mcs-driver-` and immediately finds all available drivers. `mcs-driver-rest` finds the REST driver, `mcs-driver-csv` the CSV driver, and so on. The convention ensures that web-based package browsers -- which often cannot evaluate capability metadata -- still deliver meaningful listings.
 
 2. **IDE / IntelliSense**: Where the language supports namespace packages or similar mechanisms, SDKs should use them so that all installed drivers appear under a shared prefix. In Python: `from mcs.driver.` lists all installed drivers; `from mcs.driver.csv import` shows the available classes. Without namespace packages, the developer must know the package name by heart -- with namespaces, the IDE guides them automatically.
 
@@ -82,19 +82,19 @@ The naming is **capability-based**: the driver name carries the capability (what
 
 | Class | Schema | Examples |
 |---|---|---|
-| **Driver** (default, hybrid: MCSDriver + MCSToolDriver) | `mcs-driver-<capability>[-<variant>]` | `mcs-driver-pdf`, `mcs-driver-csv`, `mcs-driver-openapi`, `mcs-driver-pdf-pymupdf` |
-| **Tool-only** (bridging only, no LLM parsing) | `mcs-driver-<capability>-toolonly[-<variant>]` | `mcs-driver-filesystem-toolonly` |
-| **Standalone** (MCSDriver without separate ToolDriver) | `mcs-driver-<capability>-standalone[-<variant>]` | `mcs-driver-pdf-standalone` |
-| **Orchestrator** (aggregates multiple ToolDrivers) | `mcs-orchestrator-<strategy>[-<variant>]` | `mcs-orchestrator-basic`, `mcs-orchestrator-weighted`, `mcs-orchestrator-finance` |
-| **Adapter** (technical, dependency of a ToolDriver) | `mcs-adapter-<source>[-<variant>]` | `mcs-adapter-localfs`, `mcs-adapter-smb`, `mcs-adapter-s3` |
-| **Bundle** (dependencies + default config only) | `mcs-bundle-<capability>-<source>[-<variant>]` | `mcs-bundle-pdf-localfs`, `mcs-bundle-pdf-s3-pymupdf` |
+| **Driver** (default, hybrid: MCSDriver + MCSToolDriver) | `mcs-driver-<capability>[-<variant>]` | `mcs-driver-rest`, `mcs-driver-csv`, `mcs-driver-filesystem` |
+| **Tool-only** (bridging only, no LLM parsing) | `mcs-driver-<capability>-toolonly[-<variant>]` | `mcs-driver-imap-toolonly`, `mcs-driver-smtp-toolonly` |
+| **Standalone** (MCSDriver without separate ToolDriver) | `mcs-driver-<capability>-standalone[-<variant>]` | `mcs-driver-mail-standalone` |
+| **Orchestrator** (aggregates multiple ToolDrivers) | `mcs-orchestrator-<strategy>[-<variant>]` | `mcs-orchestrator-basic`, `mcs-orchestrator-weighted` |
+| **Adapter** (technical, dependency of a ToolDriver) | `mcs-adapter-<source>[-<variant>]` | `mcs-adapter-localfs`, `mcs-adapter-http`, `mcs-adapter-s3` |
+| **Bundle** (dependencies + default config only) | `mcs-bundle-<capability>-<source>[-<variant>]` | `mcs-bundle-filesystem-localfs`, `mcs-bundle-csv-http` |
 
-**Discovery** -- three main prefixes for searching package registries:
+**Discovery** -- three main prefixes for searching package registries (e.g. on [pypi.org](https://pypi.org/search/?q=mcs-driver)):
 
 ```
-pip search mcs-driver-         # all drivers (hybrid, toolonly, standalone)
-pip search mcs-orchestrator-   # all orchestrators
-pip search mcs-adapter-        # all adapters
+mcs-driver-         # all drivers (hybrid, toolonly, standalone)
+mcs-orchestrator-   # all orchestrators
+mcs-adapter-        # all adapters
 ```
 
 ### Design rationale
@@ -102,7 +102,7 @@ pip search mcs-adapter-        # all adapters
 - **Driver type defaults to hybrid** (MCSDriver + MCSToolDriver). When a driver only supports one mode, the variant suffix makes this explicit (`-toolonly`, `-standalone`).
 - `[-<variant>]` is freely chosen by the author to distinguish implementations, API-specific drivers, or capability restrictions.
 - Adapters are purely technical building blocks. Whether they are published as separate packages or kept as internal libraries is an SDK decision -- but when published, they must be clearly recognizable as adapters.
-- Bundles are thin packages that pull dependencies and export a default factory. They prevent name explosion when multiple capability+adapter combinations exist (e.g. `mcs-bundle-pdf-localfs` instead of a dedicated `mcs-driver-pdf-localfs` codebase).
+- Bundles are thin packages that pull dependencies and export a default factory. They prevent name explosion when multiple capability+adapter combinations exist (e.g. `mcs-bundle-filesystem-localfs` instead of a dedicated `mcs-driver-filesystem-localfs` codebase).
 
 ### Three naming levels (Spec vs SDK)
 
@@ -118,18 +118,18 @@ The spec only governs the first level (the logical prefix). The import conventio
 
 **Installation:**
 ```
-pip install mcs-driver-pdf              # default hybrid
-pip install mcs-driver-pdf[localfs]     # with localfs adapter as extra
-pip install mcs-adapter-localfs         # adapter separately
-pip install mcs-bundle-pdf-localfs      # bundle with default factory
+pip install mcs-driver-rest             # default hybrid (REST-HTTP driver)
+pip install mcs-driver-csv             # CSV driver
+pip install mcs-driver-filesystem      # filesystem driver
+pip install mcs-adapter-localfs        # adapter separately
 ```
 
 **IDE discovery via namespace packages:**
 ```python
-from mcs.driver.csv import CsvDriver              # MCSDriver + MCSToolDriver
-from mcs.driver.pdf import PdfDriver               # type "from mcs.driver." -> IDE lists all
-from mcs.adapter.localfs import LocalFsConnector   # adapter
-from mcs.orchestrators.basic import BasicOrchestrator
+from mcs.driver.rest import RestDriver              # MCSDriver + MCSToolDriver
+from mcs.driver.csv import CsvDriver                # type "from mcs.driver." -> IDE lists all
+from mcs.adapter.localfs import LocalFsAdapter      # adapter
+from mcs.orchestrator.basic import BasicOrchestrator
 ```
 
 Python uses implicit namespace packages (PEP 420, Python 3.3+). Each driver installs into `mcs.driver.<capability>` without conflicts. No `__init__.py` in `src/`, `src/mcs/`, or `src/mcs/driver/`.
@@ -137,9 +137,9 @@ Python uses implicit namespace packages (PEP 420, Python 3.3+). Each driver inst
 ### npm (illustrative)
 
 ```
-npm install mcs-driver-pdf
+npm install mcs-driver-rest
 npm install mcs-adapter-localfs
-npm install mcs-bundle-pdf-localfs
+npm install mcs-bundle-filesystem-localfs
 ```
 
 npm has no extras like Python -- bundles are particularly important as the "happy path" installation.

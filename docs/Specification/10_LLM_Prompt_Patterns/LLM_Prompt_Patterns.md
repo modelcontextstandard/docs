@@ -51,18 +51,21 @@ These define how tools are presented to the model. Different models respond bett
 # For GPT
 template_gpt4 = """
 Available function: {name}
+Title: {title}
 Description: {description}
 Parameters (JSON Schema): {json_schema}
 """
 
 # For Claude
 template_claude = """
-<tool name="{name}">
+<tool name="{name}" title="{title}">
   <description>{description}</description>
   <parameters>{formatted_params}</parameters>
 </tool>
 """
 ```
+
+The `title` field provides a short human-readable label (maps to OpenAPI `summary` / MCP `title`). A client or orchestrator can choose to expose only `name` + `title` to the LLM for token-efficient tool listings and load the full `description` on demand when a tool is actually selected.
 
 ### 2. Usage Instructions
 These explain when and how the model should use tools, including the expected output format. This component handles the crucial "programming" of the model's behavior.
@@ -186,6 +189,43 @@ If self-healing succeeds, the call proceeds as if it was correctly formatted fro
 Self-healing is optional but recommended. It directly reduces the compound failure rate described above and is particularly valuable for models with known formatting quirks.
 
 
+## ExtractionStrategy: Detecting the Response Format
+
+The `PromptStrategy` handles encoding and decoding for a **specific format** (e.g. JSON with markers, XML). But modern LLMs don't always respond in text -- some support **native tool calling**, where the response is a structured object (e.g. OpenAI's `function_call` / `tool_calls` format) rather than plain text. Others may return a Python dict, a JSON-RPC object, or a custom structured format.
+
+Before the `PromptStrategy` can decode anything, the driver needs to determine **what kind of response it received**. This is the responsibility of the `ExtractionStrategy`.
+
+An `ExtractionStrategy` answers one question: *"Does this response contain a tool call, and if so, what is the tool name and arguments?"* Different strategies handle different response formats:
+
+| Strategy | Input format | When used |
+|---|---|---|
+| **TextExtractionStrategy** | Plain text / streamed text | LLM responds in text; delegates to `PromptStrategy.parse_tool_call()` for format-specific parsing and self-healing |
+| **OpenAIExtractionStrategy** | OpenAI `tool_calls` / `function_call` dict | LLM uses native function-calling; tool name and arguments are already structured |
+| **DictExtractionStrategy** | Generic dict with `tool` and `arguments` keys | Pre-parsed input from frameworks or middleware |
+
+### Extraction chain
+
+The driver tries each strategy in order until one succeeds:
+
+```
+LLM response
+  │
+  ├─ OpenAIExtractionStrategy  → structured tool_calls dict?  → extract
+  ├─ DictExtractionStrategy    → dict with "tool" key?        → extract
+  └─ TextExtractionStrategy    → plain text                   → PromptStrategy.parse_tool_call()
+                                                                  └─ healing rules
+                                                                  └─ fallback patterns
+```
+
+This chain makes the driver **format-agnostic**: it works whether the LLM returns native tool-call objects (GPT with `tool_choice`), structured dicts from a middleware layer, or raw text that needs regex parsing. The application developer doesn't need to know which extraction path was taken -- `process_llm_response()` accepts any of these formats and returns the same `DriverResponse`.
+
+### Relationship to PromptStrategy
+
+The `TextExtractionStrategy` is the only strategy that delegates to the `PromptStrategy`. The others bypass it entirely because the response is already structured -- no text parsing or healing required. This separation keeps the `PromptStrategy` focused on text encoding/decoding while the extraction layer handles format detection.
+
+SDKs may add new strategies (e.g. for Anthropic's native format, or XML-structured responses) without modifying existing ones. The chain is extensible by design.
+
+
 ## Dynamic Prompt Loading
 The true power of this approach emerges when prompts become dynamically loadable. Rather than hardcoding prompts in driver code, drivers can load model-specific configurations from a registry during initialization or when the active model changes. This enables several capabilities:
 
@@ -251,8 +291,8 @@ Instead of exposing a full OpenAPI spec with dozens of endpoints, a driver can l
 A curated toolset is a plain JSON file that the driver loads instead of (or alongside) the raw spec:
 
 ```python
-driver = RestHttpDriver(
-    urls=["https://raw.githubusercontent.com/org/mcs-toolsets/main/crm-subset.json"]
+driver = RestDriver(
+    url="https://raw.githubusercontent.com/org/mcs-toolsets/main/crm-subset.json"
 )
 ```
 

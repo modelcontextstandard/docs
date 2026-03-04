@@ -9,7 +9,7 @@ See [MCS Driver Contract](Driver_Contract.md) for the detailed pseudocode.
 
 The core MCSDriver interface is minimal:
 
-- `meta`: Driver metadata (ID, version, protocol, transport, etc.)
+- `meta`: Driver metadata (ID, version, capability, adapter, etc.)
 - `get_function_description(model_name?)`: Returns function spec (raw or processed, depends on the driver).
 - `get_driver_system_message(model_name?)`: Returns full system prompt. Ideally using `get_function_description` internally.
 - `process_llm_response(llm_response, streaming?) -> DriverResponse`: Parses and executes calls, returns a self-contained response object with pre-formatted messages.

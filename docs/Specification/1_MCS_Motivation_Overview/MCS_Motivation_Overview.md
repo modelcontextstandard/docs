@@ -72,8 +72,8 @@ The driver contract creates something that didn't exist before: a clear division
 
 Because each driver encapsulates specification, prompt logic, and execution behind a stable interface, roles can specialize independently. Technical engineers build ToolDrivers for specific protocols without needing AI knowledge. Prompt engineers optimize model-specific instructions inside drivers, making their work reusable across every application that uses that driver. AI application developers pick drivers and manage the conversation loop -- without understanding the underlying protocol or investing in prompt engineering.
 
-Prompt engineering, in particular, changes from a per-project cost into a one-time investment with compounding returns. When someone improves the prompts inside a driver, every application using it benefits immediately. Combined with dynamic prompt loading (Section 10[10_LLM_Prompt_Patterns/LLM_Prompt_Patterns.md]), prompt configurations become versionable, tradeable artifacts.
+Prompt engineering, in particular, changes from a per-project cost into a one-time investment with compounding returns. When someone improves the prompts inside a driver, every application using it benefits immediately. Combined with dynamic prompt loading ([Section 10](../10_LLM_Prompt_Patterns/LLM_Prompt_Patterns.md)), prompt configurations become versionable, tradeable artifacts.
 
 Because MCS drivers are standard libraries -- not separate services -- they integrate into existing toolchains: package registries, CI/CD pipelines, monitoring, access control. The LLM integration fits into the existing software architecture like any other module.
 
-This is the ecosystem MCS is designed to enable. Section 11[11_Ecosystem_Division_of_Labor.md] explores it in detail.
+This is the ecosystem MCS is designed to enable. [Section 11](../11_Ecosystem_and_Division_of_Labor.md) explores it in detail.

@@ -10,7 +10,7 @@ sidebar_position: 4
 The smallest canonical interface unit in MCS is the `MCSToolDriver`. It defines the **source of truth** about which tools exist and how they are executed:
 
 - `meta`: Driver metadata (ID, version, capability, etc.)
-- `list_tools()`: Returns a list of `Tool` objects (name, description, parameters).
+- `list_tools()`: Returns a list of `Tool` objects (name, title, description, parameters).
 - `execute_tool(tool_name, arguments)`: Executes and returns the raw result.
 
 Think of `list_tools()` as publishing an **API contract**: each `Tool` declares a method signature -- a name, a description of what it does, and the parameters it accepts. This is the interface that the LLM (indirectly, via the MCSDriver) and the Orchestrator work against. Everything downstream -- prompt generation, tool-call parsing, execution dispatch -- derives from this contract.
@@ -21,7 +21,7 @@ Both `MCSDriver` and Orchestrator derive from the ToolDriver's tool definitions.
 
 ### 4.1 `list_tools()`
 
-Returns a list of `Tool` objects representing the available functions. Each tool includes a name, description, and a list of parameters (with name, description, required flag, and optional schema).
+Returns a list of `Tool` objects representing the available functions. Each tool includes a name, an optional short title, a description, and a list of parameters (with name, description, required flag, and optional schema). At least one of `title` or `description` must be provided. The `title` serves as a token-efficient label for tool listings; the full `description` may contain multi-line prompt-engineering instructions and can be loaded on demand.
 
 ToolDrivers may generate this list dynamically from a standard spec (e.g., fetching from an OpenAPI endpoint) or return a static set for capabilities where no formal spec exists (e.g., filesystem access, CSV processing).
 

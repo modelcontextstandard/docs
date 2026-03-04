@@ -104,6 +104,15 @@ abstract class SupportsHealthcheck {
 abstract class SupportsAutostart {
     abstract autostart(kwargs: dict) -> void  // Launch container, etc.
 }
+
+struct DriverContext {
+    system_message: string           // behavioral prompt (without inlined tool descriptions)
+    tools: array[dict]               // tools in native LLM provider format (e.g. OpenAI function schema)
+}
+
+abstract class SupportsDriverContext {
+    abstract get_driver_context(model_name?: string) -> DriverContext
+}
 ```
 
 Drivers extend with mixins as needed, e.g.:

@@ -80,4 +80,4 @@ flowchart LR
 
 The driver is **stateless** -- all outcome information lives in the returned `DriverResponse`. The driver does not track conversation history; that remains the client's responsibility. The `messages` field shifts message formatting from the client to the driver, keeping client logic minimal while allowing arbitrarily complex multi-step interactions.
 
-A Proof of Idea with existing ChatModels can be found [here](https://github.com/modelcontextstandard#quickstart-the-idea-in-under-2-minutes).
+A Proof of Idea with existing ChatModels can be found on the [MCS homepage](https://modelcontextstandard.io/#see-it-working-the-raw-principle-in-2-minutes).

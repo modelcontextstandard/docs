@@ -5,121 +5,101 @@ sidebar_position: 0
 
 # Model Context Standard (MCS)
 
-**Unlock the Power of LLMs: A lightweight standard for connecting LLMs to external systems (context) through reusable drivers**
+**Your LLM needs to call an API. Today that means writing a wrapper server, a custom protocol, and prompt engineering from scratch. MCS gives you a driver instead -- configure once, connect any LLM to any API.**
 
-Connecting LLMs to external systems is still harder than it should be. Most current solutions rely on custom wrappers or complex function-calling protocols that require heavy infrastructure and manual parsing. MCS offers a simpler alternative.
+## The Problem You Know Too Well
 
-The idea that LLMs are becoming the new operating systems – famously articulated by Andrej Karpathy – is gaining traction. If LLMs are the OS, they need drivers. MCS treats integration as exactly that: a driver problem. Just like operating systems use device drivers, LLMs can use interface drivers to connect to APIs, tools, databases or devices. Instead of writing custom glue code, you configure reusable drivers based on existing standards like OpenAPI and REST. These drivers translate between your LLM’s language output and actionable operations.
+You have a REST API. Your LLM should use it. So you start building:
 
-If you've used MCP before, MCS builds on the same core -- the function calling principle -- but avoids MCP's downsides, like a new stack, new security headaches and complex hosting. It's faster to adopt, easier to maintain, and model-agnostic.
+- A wrapper server that translates between your API and the LLM
+- Custom authentication logic for a protocol your team has never debugged before
+- Hand-tuned prompts that break when you switch models
+- A deployment pipeline for yet another service that needs monitoring
 
-MCS is your plug-and-play standard for safe, scalable and elegant LLM integration.
+Three days later, you have one integration. You need twelve.
 
+Meanwhile, [up to 8% of MCP servers on GitHub contain potentially malicious code](https://blog.virustotal.com/2025/06/what-17845-github-repos-taught-us-about.html). Enterprise security analysts found that 88% of MCP servers require credentials, with 53% relying on static, long-lived secrets. Their conclusion: *"stdio-based MCP servers break nearly every enterprise security pattern"* [(source)](https://blog.christianposta.com/mcp-should-be-remote/).
 
-## Key Benefits: Why Choose MCS?
-
-MCS is a lightweight standard focused on what's essential for **connecting LLMs to real systems**.  It is **function calling** at its core.
-Instead of building custom wrappers or servers, you configure reusable drivers that use existing specs like OpenAPI.  
-Mix and match, extend or trim functions by URL, no redeploys, no prompt engineering headaches, and no code changes.
-
-### ✅ Universal Driver Architecture
-Write a driver once, and everyone can use it everywhere. Whether it's REST-HTTP, EDI-AS2, Filesystem-localfs or even CAN-Bus or MCP-STDIO. **All** LLM apps can plug into it. 
-No more wrappers, no more reimplementation or endless prompt engineering. Just configure and connect.
-
-### ✅ Utilizes Proven Protocols
-MCS avoids custom stacks and leverages OpenAPI, REST, OAuth and similar proven standards. This ensures better compatibility, security, and maintainability. 
-Easier auditing and integration into existing toolchains.
-
-### ✅ No More Glue Code
-If your API already exists, why wrap it again? MCS connects directly to the specs. 
-Skip the wrapper server. Zero proxy layers. Just point to the spec and you're ready.
-
-### ✅ Optimized Prompts, Built-In
-Drivers include refined prompts tested across models. 
-No manual prompt tuning on the client side needed. MCS handles model-specific quirks automatically.
-It's future-proof too with potential dynamic hubs using checksums to auto-load updated, high-performance versions for new models. 
-
-### ✅ Built-In Credential Isolation
-The driver acts as a trust boundary. Credentials live in the driver constructor -- configured by the operator, invisible to the agent. The agent calls `execute_tool()` and gets results, never secrets.
-No shell access to credential files, no environment variable leaks. The driver is the tool execution layer that agent frameworks are missing today.
-
-### ✅ Compatible with MCP, but Cleaner
-MCP pioneered standardization in this area, MCS makes it practical.
-MCS drivers can wrap existing MCP endpoints (e.g. mcs-driver-mcp) to enable smooth migration.
-You get modularity, reuse and zero lock-in.
-
-### ✅ Scales from Simple to Complex
-From Web APIs to industrial IoT, MCS abstracts the complexity. 
-Drivers handle the complexity, your app stays focused.
+**There has to be a better way.** And there is.
 
 
-## Quickstart: The Idea in Under 2 Minutes
+## What MCS Does Differently
 
-You don’t need a complex setup to inject context into an LLM. No protocol, no wrapper server, no SDK. A well-described API and a model that can read it – that’s all it takes.
+Andrej Karpathy famously said that LLMs are becoming the new operating systems. If that's true, they need **drivers** -- not wrapper servers.
 
-This demo proves exactly that. It shows the raw principle that MCS is built on. If an LLM can read a function description and call the endpoint, the integration is already done.
+MCS treats LLM integration as exactly that: a driver problem. Just like your OS uses a printer driver to talk to any printer, an MCS driver lets any LLM talk to any API using the same protocol.
 
-We provide a tiny FastAPI service that exposes a **readable OpenAPI HTML spec** and a test function (`fibonacci`) that returns `2 × Fibonacci(n)`, helping detect hallucinations.
-
-> ℹ️ Most LLMs can currently access external content only via `GET` requests and basic HTML parsing. But that’s enough to demonstrate the concept.
-
-
-### Deploy the Demo (VPS, Docker, Cloud)
-```bash
-# clone on a VPS / cloud VM with a public DNS or IP
-$ git clone https://github.com/modelcontextstandard/python-sdk.git
-$ cd python-sdk
-$ docker compose -f docker/quickstart/docker-compose.yml up -d  # exposes :8000 on your public host
-# optional: use a tunnel such as ngrok or cloudflared if you do not have a static IP
+```
+Today:    Your API → MCP Wrapper Server → MCP Client → LLM
+With MCS: Your API (with OpenAPI spec) → MCS Driver → LLM
 ```
 
-> 🛠️ Tip: Platforms like **Coolify** or **Render** make one‑click deployment of Dockerised apps very easy.
+**The crucial difference:** One REST-HTTP driver handles *every* REST API. Point it to a different OpenAPI spec, and it just works. No new wrapper, no new server, no new code.
 
-Don’t have a server? Use the hosted demo (up while supplies last):
+
+## What You Get
+
+### Write once, connect everything
+A single driver works across all LLM applications -- ChatGPT, Claude, Llama, your custom agent. Write a REST-HTTP driver once, and every developer on every LLM platform can use it. No more reimplementing the same integration for each model.
+
+### Your API credentials stay invisible to the agent
+The driver acts as a trust boundary. Credentials live in the driver constructor -- configured by the operator, invisible to the agent. The agent calls `execute_tool()` and gets results, never secrets. No shell access to credential files, no environment variable leaks.
+
+This is the tool execution layer that agent frameworks are missing today. An LLM that needs to read emails should see `mail.list`, `mail.read`, `mail.send` -- not your IMAP password.
+
+### No wrapper servers, no glue code
+If your API already has an OpenAPI spec, you're done. MCS connects directly to the spec. Zero proxy layers, zero additional servers to deploy and monitor.
+
+### Prompts that work out of the box
+Stop tuning prompts for every model. Drivers ship with refined prompts tested across models, including healing rules for common LLM output quirks. Swap in updated prompt strategies without changing a single line of code -- they're loaded from external config files, not hardcoded.
+
+### Proven security, not reinvented security
+MCS builds on HTTP, OAuth, JWT, and API keys -- standards your security team already knows and audits. No custom protocol means no new attack surface. Drivers are static modules with checksum verification, distributed like APT or Maven packages.
+
+### Compatible with MCP -- but without the overhead
+MCP pioneered standardization, and MCS builds on the same core idea: function calling. But MCS avoids the custom protocol stack, the wrapper servers, and the STDIO security risks. Already using MCP? Wrap your existing servers with `mcs-driver-mcp` and migrate gradually.
+
+
+## See It Working: The Raw Principle in 2 Minutes
+
+Before showing the full driver architecture, here's the raw idea that MCS is built on. No SDK, no driver -- just an LLM reading an API spec and calling the endpoint.
+
+We provide a tiny FastAPI service with a **readable OpenAPI HTML spec** and a test function (`fibonacci`) that returns `2 × Fibonacci(n)` to detect hallucinations.
+
+> Most LLMs can currently access external content only via `GET` requests and basic HTML parsing. That's enough to prove the concept.
+
+**Try it now** -- use the hosted demo or deploy your own:
 
 ```
 https://mcs-quickstart-html.coolify.alsdienst.de
 ```
 
-### How It Works
-The service exposes two endpoints:
+```bash
+# or self-host:
+git clone https://github.com/modelcontextstandard/python-sdk.git
+cd python-sdk
+docker compose -f docker/quickstart/docker-compose.yml up -d
+```
 
-| Path                  | Purpose                                            |
-| --------------------- | -------------------------------------------------- |
-| `/openapi-html`       | HTML-rendered OpenAPI spec (easy for LLMs web access to parse)     |
-| `/tools/fibonacci?n=` | returns *2 × Fibonacci(n)* to detect hallucination |
+**Steps:**
+1. Ask your LLM to open `/openapi-html` and understand the interface
+2. Ask it to get the fibonacci result for n=8
+3. Correct result: **42** (the endpoint returns 2 x Fibonacci(n) -- if the LLM says 21, it hallucinated)
 
-
-### Try It Yourself
-1. Ensure the demo is reachable via public URL. (or use the hosted URL above).
-2. Ask your LLM to open /openapi-html, understand the interface.
-3. Ask the LLM to get you the fibonacci result for some value (e.g. 8).
-4. (if needed) In a second prompt, ask the LLM to build and visit the resulting URL (e.g. `...?n=8`).
-5. Correct result: 42. If the LLM says 21, it hallucinated—since the endpoint returns 2 × Fibonacci(n), to detect hallucinations.
-
-
-### Test Results with Web-Enabled LLMs
-
-Click on the links to see the results in the chats with the LLMs.
+### Verified Results
 
 | Model             | Result | Notes                  |
 | ----------------- | ------ | ---------------------- |
 | ChatGPT (Browser) | ✅      | [requires two prompts](https://chatgpt.com/c/68582012-7c70-8009-8c39-b5d05613ecd8)   |
-| Claude 3 (web)    | ✅      | [two‑step flow](https://claude.ai/share/57128a2d-22f8-440f-a09d-41018459d94f), restricted so it could not be done in one call          |
+| Claude 3 (web)    | ✅      | [two-step flow](https://claude.ai/share/57128a2d-22f8-440f-a09d-41018459d94f), restricted so it could not be done in one call          |
 | Gemini            | ❌      | refuses second request |
-| Grok 4            | ⚠️ Partial      | [Seems to work](https://grok.com/share/bGVnYWN5_f8e10a15-65a9-47de-b43e-c72d9c004af9), but result is not readable by Groks browser (Minimal HTML Output)     |
+| Grok 4            | ⚠️      | [seems to work](https://grok.com/share/bGVnYWN5_f8e10a15-65a9-47de-b43e-c72d9c004af9), but result is not readable by Grok's browser     |
 | DeepSeek          | ❌      | hallucination, server call never happened         |
 
-
-### What This Shows
-Even without any MCS driver in place, modern LLMs can already interact with well-described APIs. No wrapper, no protocol – just a spec and an endpoint.
-
-This is exactly the simplicity that MCS formalizes. A driver packages the spec, the prompt, and the execution logic into a reusable component. What you just did manually (read the spec, call the endpoint), the driver does automatically – for every LLM, every time.
-
-**Next step:** Run a real MCS driver with a local LLM client in Docker – see the [Python SDK](https://github.com/modelcontextstandard/python-sdk) for examples.
+What you just did manually -- read the spec, call the endpoint -- is exactly what an MCS driver automates. For every LLM, every time, with optimized prompts and built-in error handling.
 
 
-## How It Works: The Conversation Loop
+## How the Driver Loop Works
 
 In a real application the client, the LLM and one or more drivers interact in a loop. The driver is **stateless** -- all outcome information is returned inside a `DriverResponse` object:
 
@@ -149,131 +129,37 @@ sequenceDiagram
     end
 ```
 
-The driver never talks to the LLM directly. It only provides the spec and executes calls. Because the driver holds no mutable state, it is thread-safe by design. New transports and protocols only need a driver, not changes to the client or the LLM integration. If one MCS driver is supported the rest will work out of the box.
-
-
-## Why MCS exists: The Problem with Current Solutions
-LLMs are becoming the core of modern software stacks, but connecting them to external systems remains unnecessarily complex. MCP deserves credit for being the first serious attempt to standardize function calling. It sparked the revolution and gave developers a protocol to build upon.
-
-However, MCP introduces fundamental challenges that make it harder to adopt than necessary.
-
-
-### The Protocol Overhead Problem
-MCP creates a new protocol stack on top of JSON-RPC, essentially reimplementing what HTTP has solved for decades. This means:
-
-- Reinventing proven solutions: Authentication, request handling, error management – all rebuilt from scratch
-- New security vulnerabilities: Recent discoveries show the risks of custom protocol implementations  [2](https://thehackernews.com/2025/07/critical-vulnerability-in-anthropics.html), [3](https://www.oligo.security/blog/critical-rce-vulnerability-in-anthropic-mcp-inspector-cve-2025-49596), [4](https://thejournal.com/articles/2025/07/08/report-finds-agentic-ai-protocol-vulnerable-to-cyber-attacks.aspx), [5](https://noailabs.medium.com/mcp-security-issues-emerging-threats-in-2025-7460a8164030), [6](https://www.redhat.com/en/blog/model-context-protocol-mcp-understanding-security-risks-and-controls) et al.
-- Additional complexity: Developers must learn new patterns instead of leveraging existing HTTP knowledge
-- New Tooling: You can not simply reuse what you build with MCP
-
-**The irony:** What you can accomplish with MCP, you can already do with REST over HTTP using battle-tested security, established tooling, and decades of optimization.
-
-### The Wrapper Server Multiplication
-MCP's architecture forces you to create wrapper servers for every integration:
-
-`Your API → MCP Wrapper Server → MCP Client → LLM`
-
-This creates several problems:
-
-- Double infrastructure: Every API needs its own wrapper server running alongside the original server
-- Maintenance overhead: Each wrapper must be updated, monitored, and secured independently
-- Resource waste: Unnecessary processes consuming CPU and memory
-- Security multiplication: More servers mean more attack surfaces
-
-This is not just our assessment. Prominent voices in the developer community have reached the same conclusion:
-
-- *"Stop Converting Your REST APIs to MCP"* [7](https://www.jlowin.dev/blog/stop-converting-rest-apis-to-mcp) argues that auto-wrapping REST APIs poisons AI agents with human-oriented granularity, polluting context and compounding tool-choice errors.
-- *"Stop Generating MCP Servers from REST APIs!"* [8](https://www.kylestratis.com/posts/stop-generating-mcp-servers-from-rest-apis/) shows that five chained REST calls with 95% individual accuracy drop overall success to ~77%, costing roughly 7x more tokens than a single purpose-built tool.
-
-### The Autostart Security Risk
-MCP's STDIO-based autostart spawns processes with user privileges, creating potential security vulnerabilities:
-
-- Untrusted code execution: Malicious MCP servers can run with full user access
-- Process bloat: Background processes running even when not needed
-- Privilege escalation risks: One compromised server can affect the entire system
-
-Research suggests up to 8% of MCP servers on GitHub contain potentially malicious code [1](https://blog.virustotal.com/2025/06/what-17845-github-repos-taught-us-about.html). Enterprise security experts echo these concerns: an analysis found 88% of MCP servers require credentials, with 53% relying on static, long-lived secrets. The conclusion: *"stdio-based MCP servers break nearly every enterprise security pattern"* [9](https://blog.christianposta.com/mcp-should-be-remote/).
-
-### The Development Burden
-For every MCP client developer:
-
-- Master prompt engineering for each model
-- Handle protocol-specific authentication with a new protocol
-- Learn new toolchains for debugging, monitoring and auditing
-- Implement MCP client logic for each application
-
-For every MCP server developer:
-
-- Write a new wrapper server for each API they want to make available to LLMs
-- If they create an MCP server with valuable logic, they cannot reuse it in classic applications without also reimplementing the MCP client
-- Maintain separate codebases for MCP and non-MCP integrations
-
-This creates a fragmented ecosystem where useful logic gets locked into MCP-specific implementations.
-
-
-### MCS is a pragmatic evolution
-MCS addresses these pain points by recognizing that this is fundamentally a driver problem, not a protocol problem.
+The driver never talks to the LLM directly. It provides the spec and executes calls. Because it holds no mutable state, it is thread-safe by design. New transports and protocols only need a new driver -- no changes to the client or LLM integration. If one MCS driver is supported, the rest work out of the box.
 
 MCS trims function calling down to two building blocks:
 
-- **Spec:** Machine-readable function descriptions -- use standards if possible! OpenAPI, JSON Schema, GraphQL SDL, WSDL, gRPC/Protobuf, OpenRPC, EDIFACT/X12, or custom formats.
+- **Spec:** Machine-readable function descriptions -- OpenAPI, JSON Schema, GraphQL SDL, WSDL, gRPC/Protobuf, OpenRPC, EDIFACT/X12, or custom formats.
 - **Bridge:** Transport layers (HTTP, AS2, CAN, ...) -- handled by adapters.
 
-Just like operating systems use device drivers to communicate with hardware, LLMs need interface drivers to communicate with external systems. 
-The key difference with MCS:
-
-**An MCS driver doesn't handle a specific function or API**, it handles **all APIs using the same protocol over the same transport**.
-This makes it behave like a true driver for the protocol and transport, abstracting these details for the LLM and client developer.
+**An MCS driver doesn't handle a specific API.** It handles **all APIs using the same protocol over the same transport**. That's what makes it a true driver.
 
 
-#### Universal Protocol Support
-- Write once, use everywhere: A REST-HTTP driver works across all LLM applications
-- Leverage existing standards: OpenAPI, OAuth, HTTP – proven and secure
-- No wrapper servers needed: Connect directly to existing APIs
-- Built-in optimizations: Prompts are tested and optimized within the driver
+## The Full Case: Why Not Just Use MCP?
 
-#### Direct API Integration
-Instead of:
+MCP deserves credit for being the first serious attempt to standardize function calling. It sparked the revolution and gave developers a protocol to build upon. However, MCP introduces fundamental challenges that make it harder to adopt than necessary.
 
-`Your API → MCP Wrapper → MCP Client → LLM`
+### Protocol overhead
+MCP creates a new protocol stack on top of JSON-RPC, reimplementing what HTTP has solved for decades: authentication, request handling, error management -- all rebuilt from scratch. New security vulnerabilities keep appearing [(1)](https://thehackernews.com/2025/07/critical-vulnerability-in-anthropics.html) [(2)](https://www.oligo.security/blog/critical-rce-vulnerability-in-anthropic-mcp-inspector-cve-2025-49596) [(3)](https://thejournal.com/articles/2025/07/08/report-finds-agentic-ai-protocol-vulnerable-to-cyber-attacks.aspx) [(4)](https://noailabs.medium.com/mcp-security-issues-emerging-threats-in-2025-7460a8164030) [(5)](https://www.redhat.com/en/blog/model-context-protocol-mcp-understanding-security-risks-and-controls). What you can accomplish with MCP, you can already do with REST over HTTP using battle-tested security and decades of optimization.
 
-MCS enables:
+### Wrapper server multiplication
+Every API needs its own MCP wrapper server running alongside the original. Double infrastructure, double maintenance, double attack surface. Independent analyses confirm this:
 
-`Your API (with a standard) → MCS Driver → LLM`
+- *"Stop Converting Your REST APIs to MCP"* [(source)](https://www.jlowin.dev/blog/stop-converting-rest-apis-to-mcp) -- auto-wrapping REST APIs poisons AI agents with human-oriented granularity, polluting context and compounding tool-choice errors.
+- *"Stop Generating MCP Servers from REST APIs!"* [(source)](https://www.kylestratis.com/posts/stop-generating-mcp-servers-from-rest-apis/) -- five chained REST calls at 95% individual accuracy drop overall success to ~77%, costing roughly 7x more tokens than a single purpose-built tool.
 
-**The crucial difference:** A specific MCS driver can handle any REST API, not just one specific API. Point it to different OpenAPI specs, and it works universally without modification.
+### Autostart security risk
+MCP's STDIO-based autostart spawns processes with user privileges. Untrusted code execution, process bloat, privilege escalation -- up to 8% of MCP servers on GitHub contain potentially malicious code [(source)](https://blog.virustotal.com/2025/06/what-17845-github-repos-taught-us-about.html).
 
-#### Security by Design
-
-- No custom protocols: Leverage proven security model the same as the transport layer / underlying protocol uses
-- Optional autostart: Only when needed, containerized and sandboxed
-- Reduced attack surface: Fewer components, established security practices
-- Standard authentication: OAuth, API keys, JWT – use what already works
-
-MCS drivers are static components like software modules that can be downloaded and used directly. This enables trusted driver repositories with checksum verification, similar to APT or Maven. Making secure deployment and auto-loading straightforward.
+### Development burden
+MCP client developers must master prompt engineering per model, implement custom authentication, learn new toolchains, and build MCP client logic for each application. MCP server developers write a new wrapper for each API, and any valuable logic they build is locked into MCP-specific implementations -- unusable in classic applications without reimplementing the MCP client.
 
 
-#### Developer Experience
-With MCS, developers get:
-
-- Plug-and-play integration: Configure drivers instead of writing wrappers
-- No prompt engineering: Optimized prompts are built into drivers
-- Standard tooling: Use existing HTTP debugging and monitoring tools
-- Modular architecture: Mix and match drivers as needed
-
-
-#### Migration Path
-Already using MCP? MCS provides a smooth transition:
-
-- Wrap existing MCP servers as MCS drivers (mcs-driver-mcp)
-- Gradual migration without breaking existing functionality
-- Immediate benefits for new integrations
-- Share the driver, so everyone can use it to connect to MCP-enabled APIs
-
-
-#### The Bottom Line
-
-MCP pioneered the concept, but MCS makes it practical. While MCP requires rebuilding HTTP functionality and managing wrapper servers, MCS leverages existing standards and eliminates unnecessary complexity.
+## Head-to-Head
 
 | Aspect | MCP | MCS |
 |--------|-----|-----|
@@ -287,23 +173,49 @@ MCP pioneered the concept, but MCS makes it practical. While MCP requires rebuil
 | **Security Model** | New attack surfaces | Proven HTTP security |
 | **Tooling** | Custom debugging/monitoring | Standard tools can be used |
 | **Integration Effort** | High (wrapper + client code) | Low (configure driver) |
-| **Credential Isolation** | Server holds secrets, agent sees only results | Driver holds secrets, agent sees only results |
+| **Credential Isolation** | Agent sees server secrets | Driver holds secrets, agent sees only results |
 
 
+## Get Started
 
-## Contributing: Building the Ecosystem Together
-MCS thrives as an open standard, and we're building a collaborative ecosystem where your expertise makes a real difference.
+```bash
+pip install mcs-driver-rest
+```
 
-### Key Areas Where Support is Needed
+```python
+from mcs.driver.rest import RestDriver
 
-- Specification refinement is crucial for MCS's success. We need contributors to identify edge cases, develop model-specific optimizations, and help us reduce complexity to the absolute essentials. Every improvement benefits the entire ecosystem.
-- Driver development opens up new possibilities. Whether you're interested in creating drivers for GraphQL, MQTT, industrial protocols like CAN-Bus, or even specialized hardware like printers, your work enables countless applications. Our Python SDK provides a solid foundation to get started.
-- SDK expansion makes MCS accessible to more developers. We're particularly focused on fleshing out TypeScript support, with plans to generate interfaces from our Python implementation. If you're skilled in other languages, we'd welcome additional SDK contributions.
-- Documentation and tutorials help newcomers understand MCS's potential. We're looking for contributors to create practical guides, such as "Building a Custom Driver" tutorials that demonstrate the complete workflow from initialization to automated prompt handling.
-- Registry infrastructure will make driver discovery and sharing seamless. Help us launch mcs-pkg, a trusted repository system with checksum verification, similar to how APT or Maven handle package distribution.
-- Real-world examples and security best practices documentation ensure MCS deployments are both effective and secure. Share your integration experiences and help establish community standards.
+driver = RestDriver("https://petstore3.swagger.io/api/v3/openapi.json")
 
-### Getting Started
-Visit our GitHub organization to explore the codebase and see current priorities. Check CONTRIBUTING.md for detailed guidelines on code standards, testing requirements, and submission processes.
+system_message = driver.get_driver_system_message()
+# Pass system_message to your LLM, then:
+response = driver.process_llm_response(llm_output)
+```
 
-Whether you're contributing code, documentation, or ideas, you're helping build the future of LLM integration. Every contribution, no matter how small, moves us closer to a world where connecting LLMs to external systems is as simple as plugging in a driver.
+Three lines of code. No wrapper server, no protocol, no prompt engineering.
+
+- [Python SDK & Examples](https://github.com/modelcontextstandard/python-sdk)
+- [Full Specification](https://modelcontextstandard.io/Specification)
+- [Building a Custom Driver](https://github.com/modelcontextstandard/python-sdk#build-your-own-driver)
+
+
+## Where MCS Stands Today
+
+MCS is the standard that makes the benefits described above possible. The specification is complete, the architecture is in place, and the first drivers are being built right now.
+
+What's already working:
+- **Specification** -- The full driver contract, adapter pattern, prompt strategy system, and orchestrator architecture are defined and documented.
+- **Python SDK** -- A monorepo with core interfaces, a REST-HTTP driver, a filesystem driver, a CSV driver, and orchestrators with pluggable resolution strategies.
+- **Prompt Strategy as Codec** -- All prompt elements are loaded from external config files (TOML), hot-swappable without code changes. The framework for model-specific prompt optimization is ready -- it just needs community testing across models.
+- **Extraction Strategy layer** -- Drivers auto-detect whether the LLM responds in text, OpenAI function-call format, or custom dict format. New formats are pluggable.
+
+What needs the community:
+- **Prompt tuning per model** -- The infrastructure is there to swap and version prompt strategies. What's missing is systematic testing: which phrasing works best for GPT-4, Claude, Llama, Gemini? Every tested configuration becomes a reusable artifact for everyone.
+- **More drivers** -- GraphQL, MQTT, CAN-Bus, MCP-STDIO bridge, specialized hardware. One driver enables every LLM app on the planet.
+- **TypeScript SDK** -- Next priority, with plans to generate interfaces from the Python implementation.
+- **Registry infrastructure** -- Help launch mcs-pkg, a trusted driver repository with checksum verification (think APT/Maven for LLM drivers).
+- **Real-world battle testing** -- Share your integration experiences, edge cases, and security findings.
+
+The foundation is solid. Now it's about making every promise on this page a reality -- and that's a community effort.
+
+Visit our [GitHub organization](https://github.com/modelcontextstandard) to explore the codebase. Check CONTRIBUTING.md for guidelines on code standards, testing, and submissions.
