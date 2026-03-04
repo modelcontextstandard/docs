@@ -42,24 +42,24 @@ But REST is just the beginning. GraphQL, MQTT, CAN-Bus in automotive, EDI in sup
 
 ## What You Get
 
-### Write once, connect everything
+### ✅ Write once, connect everything
 A single driver works across all LLM applications -- ChatGPT, Claude, Llama, your custom agent. Write a REST-HTTP driver once, and every developer on every LLM platform can use it. No more reimplementing the same integration for each model.
 
-### Your API credentials stay invisible to the agent
+### ✅ Your API credentials stay invisible to the agent
 The driver acts as a trust boundary. Credentials live in the driver constructor -- configured by the operator, invisible to the agent. The agent calls `execute_tool()` and gets results, never secrets. No shell access to credential files, no environment variable leaks.
 
 This is the tool execution layer that agent frameworks are missing today. An LLM that needs to read emails should see `mail.list`, `mail.read`, `mail.send` -- not your IMAP password.
 
-### No wrapper servers, no glue code
+### ✅ No wrapper servers, no glue code
 If your API already has an OpenAPI spec, you're done. MCS connects directly to the spec. Zero proxy layers, zero additional servers to deploy and monitor.
 
-### Prompts that work out of the box
+### ✅ Prompts that work out of the box
 Stop tuning prompts for every model. Drivers ship with refined prompts tested across models, including healing rules for common LLM output quirks. Swap in updated prompt strategies without changing a single line of code -- they're loaded from external config files, not hardcoded.
 
-### Proven security, not reinvented security
+### ✅ Proven security, not reinvented security
 MCS builds on HTTP, OAuth, JWT, and API keys -- standards your security team already knows and audits. No custom protocol means no new attack surface. Drivers are static modules with checksum verification, distributed like APT or Maven packages.
 
-### Compatible with MCP -- but without the overhead
+### ✅ Compatible with MCP -- but without the overhead
 MCP pioneered standardization, and MCS builds on the same core idea: function calling. But MCS avoids the custom protocol stack, the wrapper servers, and the STDIO security risks. Already using MCP? Wrap your existing servers with `mcs-driver-mcp` and migrate gradually.
 
 
