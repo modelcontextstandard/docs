@@ -219,6 +219,6 @@ What needs the community:
 - **Registry infrastructure** -- Help launch mcs-pkg, a trusted driver repository with checksum verification (think APT/Maven for LLM drivers).
 - **Real-world battle testing** -- Share your integration experiences, edge cases, and security findings.
 
-The foundation is solid. Now it's about making every promise on this page a reality -- and that's a community effort.
+The foundation is SOLID. Now it's about making every promise on this page a reality -- and that's a community effort.
 
 Visit our [GitHub organization](https://github.com/modelcontextstandard) to explore the codebase. Check CONTRIBUTING.md for guidelines on code standards, testing, and submissions.
