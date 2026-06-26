@@ -1,6 +1,6 @@
 ---
-title: 11. Ecosystem and Division of Labor
-sidebar_position: 11
+title: 12. Ecosystem and Division of Labor
+sidebar_position: 12
 ---
 
 # 11 · Ecosystem and Division of Labor
@@ -15,7 +15,7 @@ MCS creates a clear separation between interface definition, prompt optimization
 |---|---|---|
 | **ToolDriver developer** | Bridges an external system (REST, CAN-Bus, filesystem, ...). Implements `list_tools()` and `execute_tool()`. | No. Pure technical integration. |
 | **Driver author** | Wraps a ToolDriver (or builds a standalone driver). Invests in model-specific prompt optimization via `get_driver_system_message()` and `get_function_description()`. | Yes. Understands LLM behavior, prompt engineering, model-specific quirks. |
-| **Prompt engineer** | Optimizes prompt configurations for specific model/tool combinations. Can deliver prompt packages that drivers load dynamically (see Section 10). | Yes. Deep expertise in model behavior, but no bridging or app logic. |
+| **Prompt engineer** | Optimizes prompt configurations for specific model/tool combinations. Can deliver prompt packages that drivers load dynamically (see Section 11). | Yes. Deep expertise in model behavior, but no bridging or app logic. |
 | **AI application developer** | Builds the client. Picks drivers, calls `get_driver_system_message()` + `process_llm_response()`, manages the conversation loop. | Minimal. The driver handles the hard parts. |
 
 This is, of course, idealized. In practice, one person often fills multiple roles. But the separation creates **flexibility**: each layer can improve independently without breaking the others. A better prompt doesn't require a code change in the app. A new transport doesn't require prompt knowledge. A new LLM model doesn't require rewriting the bridge.
@@ -26,7 +26,7 @@ Today, prompt engineering is fragmented. Every application reinvents the same pa
 
 MCS changes this by embedding prompt logic into the driver layer. When someone invests time in optimizing a system prompt for a specific capability/model combination, that investment is encapsulated inside the driver. Every application using that driver benefits immediately -- without any change to application code.
 
-This transforms prompt engineering from a per-project burden into a one-time investment with compounding returns. Combined with the dynamic prompt loading concept (Section 10), prompt configurations become tradeable, versionable artifacts -- similar to firmware that can be loaded at runtime.
+This transforms prompt engineering from a per-project burden into a one-time investment with compounding returns. Combined with the dynamic prompt loading concept (Section 11), prompt configurations become tradeable, versionable artifacts -- similar to firmware that can be loaded at runtime.
 
 ## Drivers as versionable components
 
@@ -59,7 +59,7 @@ When these pieces come together, an ecosystem becomes possible:
 
 - **Community-driven drivers** for common capabilities, tested across models, shared via package registries
 - **Specialized prompt packages** optimized for specific model families, loadable at runtime
-- **Curated toolset definitions** (see Section 10) that cherry-pick API endpoints and provide LLM-optimized descriptions, shareable via git
+- **Curated toolset definitions** (see Section 11) that cherry-pick API endpoints and provide LLM-optimized descriptions, shareable via git
 - **A central discovery index** (`mcs-pkg`) that complements existing package managers without being a prerequisite (see below)
 
 Each of these can develop at its own pace, by different people, with different expertise. The driver contract is the stable center that holds it all together.

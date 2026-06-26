@@ -1,6 +1,6 @@
 ---
-title: 14. Next Steps
-sidebar_position: 14
+title: 15. Next Steps
+sidebar_position: 15
 ---
 
 # 14 · Next Steps
@@ -15,7 +15,7 @@ sidebar_position: 14
 - **Driver trust and verification**: Running third-party drivers is running third-party code. MCS should provide mechanisms to make driver origin and integrity verifiable -- similar to how Linux distributions use package checksums and signing keys. Concrete steps under discussion:
   - Signed package checksums published alongside drivers on PyPI/npm
   - A machine-readable trust manifest in `DriverMeta` (author, source repository, signing key reference)
-  - Integration with the `mcs-pkg` discovery index (see Section 11) to surface trust labels (Verified / Reference / Community), security notes, and compatibility matrices
+  - Integration with the `mcs-pkg` discovery index (see Section 12) to surface trust labels (Verified / Reference / Community), security notes, and compatibility matrices
   - Guidelines for client-side verification before dynamic loading (compare checksum before importing a driver discovered at runtime)
 
   The goal is not to build a PKI from scratch but to leverage existing ecosystem tools (PyPI trusted publishers, npm provenance, GitHub attestations) and expose the results in MCS-specific metadata. SDKs implement the verification mechanics; the spec defines what metadata must be present.

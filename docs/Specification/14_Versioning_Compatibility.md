@@ -1,6 +1,6 @@
 ---
-title: 13. Versioning & Compatibility
-sidebar_position: 13
+title: 14. Versioning & Compatibility
+sidebar_position: 14
 ---
 
 # 13 · Versioning & Compatibility

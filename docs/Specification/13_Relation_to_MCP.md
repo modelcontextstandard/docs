@@ -1,6 +1,6 @@
 ---
-title: 12. Relation to MCP
-sidebar_position: 12
+title: 13. Relation to MCP
+sidebar_position: 13
 ---
 
 # 12 · Relation to MCP

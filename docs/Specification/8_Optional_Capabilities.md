@@ -1,6 +1,6 @@
 ---
-title: 7. Optional Capabilities
-sidebar_position: 7
+title: 8. Optional Capabilities
+sidebar_position: 8
 ---
 
 # 7 · Optional Capabilities
@@ -15,10 +15,48 @@ Extend via capabilities, e.g.:
 | Resource preload | `cache`         | `abstract class SupportsCache { abstract warmup() -> void }`       | Preloads resources for faster execution. |
 | Status & metrics | `status`        | `abstract class SupportsStatus { abstract get_status() -> dict }`   | Provides runtime metrics or detailed status. |
 | Autostart        | `autostart`     | `abstract class SupportsAutostart { abstract autostart(kwargs: dict) -> void }` | Launches required infrastructure (e.g., containers). |
-| Driver context   | `native_tools` | `abstract class SupportsNativeTools { abstract get_native_tool_context() -> NativeToolContext }` | Provides structured tool definitions for native tool-calling APIs (see below). |
+| Native tools     | `native_tools` | `abstract class SupportsNativeTools { abstract get_native_tool_context() -> NativeToolContext }` | Provides structured tool definitions for native tool-calling APIs (see below). |
 
 
 **Rule of Thumb:** For easy use cases, name the mixin class `Supports<CapabilityName>` with the method named `<capabilityName>`. This convention simplifies dynamic invocation but is not mandatory. SDKs may define their own standards for common capabilities.
+
+
+## How `DriverMeta` carries capabilities
+
+A capability has two halves: the **contract** (the `Supports…` interface plus
+its `CAPABILITY` flag) and the **metadata** that advertises it. `DriverMeta`
+carries the metadata and offers three operations. The reason they exist —
+rather than a simple `isinstance` check — is **composition**: capabilities that
+*intervene in how MCS handles a call* (authentication, permission, lifecycle
+hooks) are built as [decorators](6_Decorators.md) — a driver that wraps another
+driver. A wrapper hides the inner layers, so an `isinstance` check (which only
+sees the outermost object) is no longer enough. These three operations make a
+stack of wrapped drivers look like *one* driver to the client:
+
+- **Declaration — `meta.with_capability(Contract)`** returns a copy of the
+  metadata with the contract's `CAPABILITY` flag added (idempotent). A plain
+  driver may list its flags explicitly; a reference base (like `DriverBase`)
+  may add its own automatically; a decorator **aggregates** the inner driver's
+  flags and appends its own — so `meta.capabilities` always reflects the
+  *whole* stack.
+- **Detection — `meta.has_capability(Contract)`** is a pure read over those
+  aggregated flags: *"is this capability present anywhere in the stack?"* It
+  replaces `isinstance`, which would miss a capability provided deeper down.
+- **Resolution — `DriverMeta.resolve_capability(driver, Contract)`** returns
+  the actual layer that satisfies the contract (typed, ready to call) by
+  searching inward through the stack. A plain driver is matched directly; a
+  wrapper delegates the search to the driver it wraps (via the optional
+  `SupportsCapabilityResolution` contract).
+
+Why on `DriverMeta` and not on the driver interface? So the **core `MCSDriver`
+contract stays minimal** — it gains no methods for this. Detection and
+declaration are pure metadata reads/writes (instance methods on the metadata);
+resolution navigates the object stack, so it is a *static* helper that takes
+the driver explicitly (the shared class-level metadata cannot reach a specific
+driver instance). The payoff: the **driver author stays simple** — a plain
+driver needs none of this — and the **client treats every `MCSDriver` the
+same**, whether it is a plain driver, an orchestrator, or a decorator, no
+matter what was injected.
 
 
 ## NativeToolContext: Native Tool-Calling Support
@@ -48,7 +86,7 @@ When using native tool-calling:
 2. The returned `system_message` contains only the behavioral prompt (usage instructions, formatting guidance) -- tool descriptions are **not** inlined, since they are provided separately in `tools`.
 3. The `tools` array contains tool definitions in the provider's native schema (e.g. OpenAI's `{"type": "function", "function": {"name": ..., "parameters": ...}}` format).
 4. The client passes `system_message` as the system prompt and `tools` as the `tools` parameter to the LLM API.
-5. The LLM responds with structured `tool_calls` objects. The client passes these to `process_llm_response()`, which accepts dicts via the `ExtractionStrategy` chain (see [Section 10](10_LLM_Prompt_Patterns/LLM_Prompt_Patterns.md)).
+5. The LLM responds with structured `tool_calls` objects. The client passes these to `process_llm_response()`, which accepts dicts via the `ExtractionStrategy` chain (see [Section 11](11_LLM_Prompt_Patterns/LLM_Prompt_Patterns.md)).
 
 ### Why this is optional
 

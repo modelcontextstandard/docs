@@ -1,6 +1,6 @@
 ---
-title: 8. Autostart Convention
-sidebar_position: 8
+title: 9. Autostart Convention
+sidebar_position: 9
 ---
 
 # 8 · Autostart Convention

@@ -1,6 +1,6 @@
 ---
-title: 6. Configuration & Instantiation
-sidebar_position: 6
+title: 7. Configuration & Instantiation
+sidebar_position: 7
 ---
 
 # 6 · Configuration & Instantiation

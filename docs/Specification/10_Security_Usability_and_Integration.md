@@ -1,6 +1,6 @@
 ---
-title: 9. Security, Usability and Integration
-sidebar_position: 9
+title: 10. Security, Usability and Integration
+sidebar_position: 10
 ---
 
 # 9 · Security, Usability and Integration
@@ -11,7 +11,7 @@ The experience with MCP has made one thing very clear: introducing a new protoco
 
 MCS avoids this entire class of protocol-level vulnerabilities by building on battle-tested standards whose security properties are well understood and whose tooling (firewalls, API gateways, OAuth flows, TLS, ...) is already deployed in production. No new wire protocol means no new protocol-specific attack surface.
 
-That said, **running untrusted drivers is still running untrusted code**. MCS can improve trust signals -- unique driver IDs, distribution through established package registries like PyPI and npm, optional signed checksums, and a discovery index (see Section 11) -- but it cannot eliminate the fundamental risk of executing third-party software. Future work includes verifiable origin, integrity checks, and community review mechanisms for drivers (see [Section 14 -- Driver trust and verification](14_Next_Steps.md)).
+That said, **running untrusted drivers is still running untrusted code**. MCS can improve trust signals -- unique driver IDs, distribution through established package registries like PyPI and npm, optional signed checksums, and a discovery index (see Section 12) -- but it cannot eliminate the fundamental risk of executing third-party software. Future work includes verifiable origin, integrity checks, and community review mechanisms for drivers (see [Section 15 -- Driver trust and verification](15_Next_Steps.md)).
 
 ## What MCS does (and does not) guarantee
 
@@ -21,7 +21,7 @@ Because MCS reuses existing transports and standards, all existing infrastructur
 
 ## Credentials and configuration
 
-MCS expects driver configuration to happen via the **constructor** (see [Section 6 -- Driver construction](6_Configuration_Instantiation.md)). Credentials are typically either:
+MCS expects driver configuration to happen via the **constructor** (see [Section 7 -- Driver construction](7_Configuration_Instantiation.md)). Credentials are typically either:
 
 - passed explicitly to the driver constructor, or
 - read by the driver from environment variables.
@@ -56,7 +56,7 @@ MCS currently does not standardize a built-in user-consent mechanism ("approve t
 
 The architecture already provides a natural seam for consent: the Orchestrator parses the LLM output, extracts the tool name and arguments, and calls `execute_tool()` as a discrete step. A consent check fits naturally between parse and execute.
 
-The current design direction is a **consent mixin** (e.g. `SupportsConsent`). When a driver or orchestrator enables this capability, it signals pending tool calls to the client before execution -- including the tool name, arguments, and an optional timeout. The client presents the request to the user and either confirms or denies. If consent is not granted within the timeout, the tool call is aborted and the driver returns an error via `DriverResponse` (with `call_failed = true` and an appropriate `call_detail`). This keeps consent opt-in, driver-controlled, and compatible with all client types (TUI, GUI, batch). The mixin system can provide one solution if the ecosystem converges on common patterns (see [Section 14](14_Next_Steps.md) for ongoing discussion).
+The current design direction is a **consent mixin** (e.g. `SupportsConsent`). When a driver or orchestrator enables this capability, it signals pending tool calls to the client before execution -- including the tool name, arguments, and an optional timeout. The client presents the request to the user and either confirms or denies. If consent is not granted within the timeout, the tool call is aborted and the driver returns an error via `DriverResponse` (with `call_failed = true` and an appropriate `call_detail`). This keeps consent opt-in, driver-controlled, and compatible with all client types (TUI, GUI, batch). The mixin system can provide one solution if the ecosystem converges on common patterns (see [Section 15](15_Next_Steps.md) for ongoing discussion).
 
 ## Beyond LLM integration: two perspectives
 

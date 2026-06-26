@@ -1,6 +1,6 @@
 ---
-title: 10. LLM Prompt Patterns / Dynamic Optimization
-sidebar_position: 10
+title: 11. LLM Prompt Patterns / Dynamic Optimization
+sidebar_position: 11
 ---
 
 # 10 · LLM Prompt Patterns and Dynamic Optimization (Perspective)
@@ -351,4 +351,4 @@ Think of prompts as instructions that program the model for specific tasks. Just
 
 ---
 
-Prompt patterns and dynamic optimization are one part of the larger picture. Section 11 explores how this -- together with the driver contract, ToolDrivers, and orchestrators -- creates a division of labor and an ecosystem where different roles can specialize and contribute independently.
+Prompt patterns and dynamic optimization are one part of the larger picture. Section 12 explores how this -- together with the driver contract, ToolDrivers, and orchestrators -- creates a division of labor and an ecosystem where different roles can specialize and contribute independently.
