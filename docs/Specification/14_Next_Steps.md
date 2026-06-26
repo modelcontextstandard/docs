@@ -42,24 +42,24 @@ sidebar_position: 14
 
 - **Raw source spec access**: Should drivers expose the *original* unprocessed source specification (e.g. the raw OpenAPI file before any reduction or transformation)? Currently `get_function_description` returns whatever the driver has prepared, which may be reduced, reformatted, or generated from `Tool` objects. A capability like `"raw_spec"` could signal that the original source is available, but no concrete use case has been identified yet. If needed, this could be modeled as a mixin or a method on `DriverMeta`.
 
-### ToolCallSignalingMixin -- Inline tool-call detection during streaming (prototyped in Python SDK)
+### ToolCallSignaling -- Inline tool-call detection during streaming (prototyped in Python SDK)
 
 When an LLM streams text token-by-token and does not provide native tool-call events (e.g. older or local models), the client cannot distinguish tool-call JSON from regular text until the stream ends.  By then, the raw JSON has already been displayed to the user.
 
-**Proposed approach:** An opt-in mixin `ToolCallSignalingMixin` that gives the driver a lightweight signaling interface the client can query during streaming:
+**Proposed approach:** An opt-in mixin `ToolCallSignaling` that gives the driver a lightweight signaling interface the client can query during streaming:
 
 - `might_be_tool_call(partial: str) -> bool` -- fast heuristic on a few accumulated tokens.  Returns `True` if the text *could* be the start of a tool call.  The client uses this to pause display and start buffering.
 - `is_complete_tool_call(text: str) -> bool` -- checks whether the buffered text is a fully parseable tool call ready for `process_llm_response`.
 
 **Design constraints:**
 
-- The mixin is **opt-in** and does not change the core `MCSDriver` interface.  Clients detect support via `isinstance(driver, ToolCallSignalingMixin)`.
+- The mixin is **opt-in** and does not change the core `MCSDriver` interface.  Clients detect support via its `CAPABILITY` flag in `driver.meta.capabilities` (not `isinstance`, so it also works through decorators/orchestrators).
 - Both methods are **pure functions** on the provided text -- the driver stays stateless.  All buffering, timeout, and display logic is the client's responsibility.
 - The heuristic operates like a "magic byte" check: the client buffers a small token window and asks the driver whether it could be a tool call opener (e.g. `{`, `` ``` ``).  This avoids the latency of routing every token through the driver.
 - **Timeout handling** is a client concern: if `might_be_tool_call` returned `True` but `is_complete_tool_call` does not confirm within N milliseconds, the client flushes the buffer and displays it.  Different clients may choose different strategies (spinner, delayed display, etc.).
 - When the LLM writes explanatory text *before* the JSON ("Let me look that up: `{...}`"), `might_be_tool_call` triggers mid-stream at the `{`.  The user sees the preceding text and then a brief pause while the tool executes -- which is natural UX.
 
-**Status:** A reference implementation exists in the Python SDK (`ToolCallSignalingMixin` in `mcs-driver-core`, demonstrated in `mcs-examples/` with `csv_localfs_driver_tcs.py` and `mcs_driver_minimal_client_stream_tcs.py`).  The design should be validated across more drivers and models before promoting to a standard recommendation.
+**Status:** A reference implementation exists in the Python SDK (`ToolCallSignaling` in `mcs-driver-core`, demonstrated in `mcs-examples/` with `csv_localfs_driver_tcs.py` and `mcs_driver_minimal_client_stream_tcs.py`).  The design should be validated across more drivers and models before promoting to a standard recommendation.
 
 ### Provider Tool-Call Format Helpers (for evaluation)
 
