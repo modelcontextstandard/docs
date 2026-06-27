@@ -3,7 +3,7 @@ title: 7. Configuration & Instantiation
 sidebar_position: 7
 ---
 
-# 6 · Configuration & Instantiation
+# 7 · Configuration & Instantiation
 
 All driver configuration happens via the **constructor**. URLs, auth tokens, proxies, adapter selection, connection parameters -- everything a driver needs is passed at creation time. This decouples configuration from functionality and keeps the client agnostic: it does not need to know what a specific driver requires internally.
 

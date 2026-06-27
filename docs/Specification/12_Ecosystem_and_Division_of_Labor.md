@@ -3,7 +3,7 @@ title: 12. Ecosystem and Division of Labor
 sidebar_position: 12
 ---
 
-# 11 · Ecosystem and Division of Labor
+# 12 · Ecosystem and Division of Labor
 
 The previous sections describe individual building blocks: the driver contract, the ToolDriver, the adapter pattern, the orchestrator, prompt patterns, and self-healing. This section explains what they enable *together*.
 

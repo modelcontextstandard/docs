@@ -3,7 +3,7 @@ title: 9. Autostart Convention
 sidebar_position: 9
 ---
 
-# 8 · Autostart Convention
+# 9 · Autostart Convention
 
 MCS uses established interfaces directly -- HTTP endpoints that already run on servers, local libraries called in-process. There is no need to start an extra server just to talk to a tool. You would never spin up a FastAPI server to access the local filesystem, yet that is exactly what MCP does with its STDIO-based servers. MCS eliminates that layer entirely.
 

@@ -3,7 +3,7 @@ title: 10. Security, Usability and Integration
 sidebar_position: 10
 ---
 
-# 9 · Security, Usability and Integration
+# 10 · Security, Usability and Integration
 
 MCS is intentionally **not** a security framework. Its goal is to connect LLMs to external systems directly and minimally by reusing established technologies (HTTP, OpenAPI, OAuth, Docker, ...) instead of inventing a new protocol stack.
 

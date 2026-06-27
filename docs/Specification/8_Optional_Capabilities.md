@@ -3,7 +3,7 @@ title: 8. Optional Capabilities
 sidebar_position: 8
 ---
 
-# 7 · Optional Capabilities
+# 8 · Optional Capabilities
 
 MCS keeps the base contract tiny. Optional behavior is signaled via **capability flags** in `DriverMeta`. Consumers must *feature-detect* before invoking an optional method (i.e., check if the flag exists in `meta.capabilities` and then dynamically call the corresponding method).
 
@@ -35,7 +35,7 @@ stack of wrapped drivers look like *one* driver to the client:
 
 - **Declaration — `meta.with_capability(Contract)`** returns a copy of the
   metadata with the contract's `CAPABILITY` flag added (idempotent). A plain
-  driver may list its flags explicitly; a reference base (like `DriverBase`)
+  driver may list its flags explicitly; a reference base (like `BaseDriver`)
   may add its own automatically; a decorator **aggregates** the inner driver's
   flags and appends its own — so `meta.capabilities` always reflects the
   *whole* stack.
@@ -92,6 +92,6 @@ When using native tool-calling:
 
 Native tool-calling is not universally supported. Many models (open-source, local, or older commercial models) only work with text prompts. The text-based path (`get_driver_system_message()` + text parsing) remains the universal default. `NativeToolContext` is an optimization for clients that target specific providers.
 
-### Relationship to DriverBase
+### Relationship to BaseDriver
 
-In the Python SDK, `DriverBase` implements `SupportsNativeTools` by default. It derives the `tools` array from the `MCSToolDriver.list_tools()` output, converting each `Tool` into the OpenAI function-calling schema. The `system_message` is generated from the `PromptStrategy` but without inlined tool descriptions. This means any driver that inherits from `DriverBase` automatically supports native tool-calling without additional code.
+In the Python SDK, `BaseDriver` implements `SupportsNativeTools` by default. It derives the `tools` array from the `MCSToolDriver.list_tools()` output, converting each `Tool` into the OpenAI function-calling schema. The `system_message` is generated from the `PromptStrategy` but without inlined tool descriptions. This means any driver that inherits from `BaseDriver` automatically supports native tool-calling without additional code.

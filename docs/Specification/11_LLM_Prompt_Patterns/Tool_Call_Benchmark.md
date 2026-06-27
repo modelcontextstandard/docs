@@ -3,7 +3,7 @@ title: Tool Call Benchmark
 sidebar_position: 2
 ---
 
-# 10.1 Measuring Tool-Call Error Rates and the Case for a Community Benchmark
+# 11.1 Measuring Tool-Call Error Rates and the Case for a Community Benchmark
 
 In today’s multi-step LLM workflows, even a seemingly high single-call accuracy of 95–98% can erode confidence rapidly. Imagine an application that orchestrates five sequential tool calls: what feels like rock-solid performance for one call can tumble into frustrating unreliability when multiplied across a chain. To transform prompt optimization from an art into a reproducible science, we need to precisely quantify where and how often these calls fail and share those measurements in an open, community-driven benchmark.
 

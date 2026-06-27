@@ -3,7 +3,7 @@ title: 6. Decorators
 sidebar_position: 6
 ---
 
-# Decorators
+# 6 · Decorators
 
 The [Orchestrator](5_Orchestrator.md) showed the first kind of composition:
 many drivers aggregated behind a single `MCSDriver` interface. **Decorators**
@@ -70,7 +70,7 @@ execution beneath it.
 
 A capability built as a decorator still has a *contract* (`SupportsAuth`,
 `SupportsPermission`, …) that declares it and carries its `CAPABILITY` flag —
-the decorator is just the *example implementation*, exactly as `DriverBase` is
+the decorator is just the *example implementation*, exactly as `BaseDriver` is
 the example implementation of the core contracts. A driver author may also
 build the behaviour directly into their own driver instead of using a decorator.
 
@@ -89,6 +89,23 @@ The payoff is twofold, and it is why this pattern was chosen:
 - **The client sees one thing.** Every `MCSDriver` is treated identically —
   plain driver, orchestrator, or decorator — so the client never has to know
   what the stack contains, no matter what was injected.
+
+## Reference implementation
+
+The Python SDK ships a reusable `BaseDecorator` in **`mcs-driver-core`**. It
+delegates every interface call to a single inner driver and resolves
+capabilities by searching inward — the one-inner counterpart to what the
+[Orchestrator](5_Orchestrator.md) does for many. A concrete decorator
+(`AuthDecorator`, `PermissionDecorator`, …) subclasses it and overrides only
+the method it intercepts, usually `execute_tool`.
+
+It lives in the kernel for the same reason `BaseDriver` does: it is **pure
+composition mechanism** — delegation plus stack-navigation — zero-dependency,
+with no concept of its own. The orchestrator is *also* a wrapping driver, but
+it carries an abstraction of its own (a pluggable resolution strategy), so it
+ships as a separate package (`mcs-orchestrator-base`). The rule of thumb: pure
+mechanism stays in the kernel; composition that carries its own strategy
+becomes its own package.
 
 ## Summary
 

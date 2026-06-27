@@ -3,7 +3,7 @@ title: 11. LLM Prompt Patterns / Dynamic Optimization
 sidebar_position: 11
 ---
 
-# 10 · LLM Prompt Patterns and Dynamic Optimization (Perspective)
+# 11 · LLM Prompt Patterns and Dynamic Optimization (Perspective)
 
 **Note**: This section describes experimental concepts and future possibilities that extend beyond the current MCS implementation.
 
@@ -162,15 +162,15 @@ comment = "Strip opening markdown fences"
 
 This separation of text from code has a practical consequence: prompt engineers can iterate on prompt wording, healing patterns, and retry messages without touching Python/TypeScript code -- and without requiring a new release of the driver package.
 
-### Relationship to DriverBase
+### Relationship to BaseDriver
 
-The `DriverBase` class in the Python SDK consumes a `PromptStrategy` and wires it into the `MCSDriver` contract:
+The `BaseDriver` class in the Python SDK consumes a `PromptStrategy` and wires it into the `MCSDriver` contract:
 
 - `get_function_description()` calls `strategy.format_tools()`
 - `get_driver_system_message()` fills `strategy.system_template` with tools and call example
 - `process_llm_response()` calls `strategy.parse_tool_call()` and handles the result
 
-Concrete drivers like `RestDriver`, `FilesystemDriver`, or orchestrators inherit from `DriverBase` and only implement `list_tools()` and `execute_tool()`. All LLM-facing logic -- prompt generation, response parsing, healing, retry handling -- is shared through the strategy, eliminating code duplication across drivers.
+Concrete drivers like `RestDriver`, `FilesystemDriver`, or orchestrators inherit from `BaseDriver` and only implement `list_tools()` and `execute_tool()`. All LLM-facing logic -- prompt generation, response parsing, healing, retry handling -- is shared through the strategy, eliminating code duplication across drivers.
 
 
 ### Self-Healing

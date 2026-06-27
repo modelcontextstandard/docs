@@ -3,7 +3,7 @@ title: 13. Relation to MCP
 sidebar_position: 13
 ---
 
-# 12 · Relation to MCP
+# 13 · Relation to MCP
 
 MCS does **not** compete with MCP directly. It generalizes the same idea of standardizing LLM external system connections without imposing a new wire protocol or stack. MCP updates in 2025 (e.g., streamable HTTP transport, OAuth Resource Servers with mandatory Resource Indicators per RFC 8707) have improved its robustness, but vulnerabilities persist. Mostly because of the new protocol stack. MCP uses it and MCS shows that this is not needed.
 
