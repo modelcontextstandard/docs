@@ -90,6 +90,14 @@ The payoff is twofold, and it is why this pattern was chosen:
   plain driver, orchestrator, or decorator — so the client never has to know
   what the stack contains, no matter what was injected.
 
+A practical consequence: a decorator delegates the *interface* (`list_tools`,
+`execute_tool`), not arbitrary methods. So an inner capability such as
+`healthcheck` is **advertised** through the stack (`meta.capabilities` aggregates
+it) but **reached** via `resolve_capability` — never called directly on the
+wrapper. See [Optional Capabilities → Using a capability from the client's
+side](8_Optional_Capabilities.md#using-a-capability-from-the-clients-side) for
+the detect → resolve → call pattern.
+
 ## Reference implementation
 
 The Python SDK ships a reusable `BaseDecorator` in **`mcs-driver-core`**. It

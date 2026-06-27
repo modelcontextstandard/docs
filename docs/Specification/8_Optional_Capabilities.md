@@ -5,7 +5,7 @@ sidebar_position: 8
 
 # 8 · Optional Capabilities
 
-MCS keeps the base contract tiny. Optional behavior is signaled via **capability flags** in `DriverMeta`. Consumers must *feature-detect* before invoking an optional method (i.e., check if the flag exists in `meta.capabilities` and then dynamically call the corresponding method).
+MCS keeps the base contract tiny. Optional behavior is signaled via **capability flags** in `DriverMeta`. Consumers must *feature-detect* before invoking an optional method: check that the flag is present in `meta.capabilities`, then call the method on the layer that [`resolve_capability`](#how-drivermeta-carries-capabilities) returns — *not necessarily on the driver instance you hold*, since a [decorator](6_Decorators.md) delegates the interface but not arbitrary methods. The [client-side pattern](#using-a-capability-from-the-clients-side) below shows the full detect → resolve → call sequence.
 
 Extend via capabilities, e.g.:
 
@@ -47,6 +47,29 @@ stack of wrapped drivers look like *one* driver to the client:
   searching inward through the stack. A plain driver is matched directly; a
   wrapper delegates the search to the driver it wraps (via the optional
   `SupportsCapabilityResolution` contract).
+
+### Using a capability from the client's side
+
+The three operations combine into one **detect → resolve → call** sequence. The
+key point: you call the method on what `resolve_capability` *returns*, not on the
+driver you hold — for a decorated or orchestrated stack those are different
+objects.
+
+```python
+# `driver` may be a plain driver, an orchestrator, or a decorator stack —
+# the client does not know or care.
+if driver.meta.has_capability(SupportsHealthcheck):
+    layer = DriverMeta.resolve_capability(driver, SupportsHealthcheck)
+    result = layer.healthcheck()        # called on the resolving layer
+```
+
+If `driver` is a plain driver, `resolve_capability` returns it unchanged and the
+call lands directly. If `driver` is, say, an `AuthDecorator` wrapping a
+healthcheck-capable ToolDriver, the flag is still visible — the decorator
+*aggregated* it — but the method lives on the inner driver, and
+`resolve_capability` walks inward to hand you that layer. Calling
+`driver.healthcheck()` directly would fail: a decorator delegates the
+*interface* (`list_tools`, `execute_tool`), **not** arbitrary methods.
 
 Why on `DriverMeta` and not on the driver interface? So the **core `MCSDriver`
 contract stays minimal** — it gains no methods for this. Detection and
