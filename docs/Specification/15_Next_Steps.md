@@ -53,7 +53,7 @@ When an LLM streams text token-by-token and does not provide native tool-call ev
 
 **Design constraints:**
 
-- The mixin is **opt-in** and does not change the core `MCSDriver` interface.  Clients detect support via its `CAPABILITY` flag in `driver.meta.capabilities` (not `isinstance`, so it also works through decorators/orchestrators).
+- The mixin is **opt-in** and does not change the core `MCSDriver` interface.  Clients detect support via its `CAPABILITY` flag in `driver.meta.capabilities` (not `isinstance`, so it also works through a transparent decorator stack, which aggregates its inner flags; an opaque orchestrator would need to provide `tcs` itself).
 - Both methods are **pure functions** on the provided text -- the driver stays stateless.  All buffering, timeout, and display logic is the client's responsibility.
 - The heuristic operates like a "magic byte" check: the client buffers a small token window and asks the driver whether it could be a tool call opener (e.g. `{`, `` ``` ``).  This avoids the latency of routing every token through the driver.
 - **Timeout handling** is a client concern: if `might_be_tool_call` returned `True` but `is_complete_tool_call` does not confirm within N milliseconds, the client flushes the buffer and displays it.  Different clients may choose different strategies (spinner, delayed display, etc.).
