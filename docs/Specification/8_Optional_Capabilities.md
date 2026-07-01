@@ -36,24 +36,26 @@ stack of wrapped drivers look like *one* driver to the client:
 - **Declaration — `meta.with_capability(Contract)`** returns a copy of the
   metadata with the contract's `CAPABILITY` flag added (idempotent). A plain
   driver may list its flags explicitly; a reference base (like `BaseDriver`)
-  may add its own automatically; a decorator **aggregates** the inner driver's
-  flags and appends its own — so `meta.capabilities` always reflects the
-  *whole* stack.
+  may add its own automatically; a **decorator** (a transparent wrapper)
+  **aggregates** the inner driver's flags and appends its own — so
+  `meta.capabilities` reflects the whole decorated stack. An **orchestrator**
+  does *not* aggregate its drivers' flags: it advertises only what it provides
+  itself (see [Decorators → transparent vs. opaque](6_Decorators.md#transparent-vs-opaque-composition)).
 - **Detection — `meta.has_capability(Contract)`** is a pure read over those
   aggregated flags: *"is this capability present anywhere in the stack?"* It
   replaces `isinstance`, which would miss a capability provided deeper down.
 - **Resolution — `DriverMeta.resolve_capability(driver, Contract)`** returns
-  the actual layer that satisfies the contract (typed, ready to call) by
-  searching inward through the stack. A plain driver is matched directly; a
-  wrapper delegates the search to the driver it wraps (via the optional
-  `SupportsCapabilityResolution` contract).
+  the actual layer that satisfies the contract (typed, ready to call). A plain
+  driver is matched directly; a **decorator** delegates the search inward (via
+  the optional `SupportsCapabilityResolution` contract). An **orchestrator**,
+  being opaque, is matched only on itself — it surfaces the capabilities it
+  implements, not those of the drivers it holds.
 
 ### Using a capability from the client's side
 
 The three operations combine into one **detect → resolve → call** sequence. The
 key point: you call the method on what `resolve_capability` *returns*, not on the
-driver you hold — for a decorated or orchestrated stack those are different
-objects.
+driver you hold — for a decorated stack those can be different objects.
 
 ```python
 # `driver` may be a plain driver, an orchestrator, or a decorator stack —

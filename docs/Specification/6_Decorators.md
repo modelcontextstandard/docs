@@ -98,12 +98,35 @@ wrapper. See [Optional Capabilities → Using a capability from the client's
 side](8_Optional_Capabilities.md#using-a-capability-from-the-clients-side) for
 the detect → resolve → call pattern.
 
+## Transparent vs. opaque composition
+
+Two kinds of driver wrap other drivers, and they treat capabilities differently:
+
+- A **decorator is a *transparent* wrapper.** It wraps exactly **one** inner
+  driver and changes a single path uniformly, so the inner driver's capabilities
+  *are* the stack's capabilities. It therefore **aggregates** them
+  (`meta.capabilities` reflects inner + its own) and **resolves inward** — an
+  inner `healthcheck` is reachable through the decorator via `resolve_capability`.
+- An **orchestrator is an *opaque* wrapper.** It bundles **many** drivers into a
+  new entity with its own identity. A capability held by *one* of its N drivers
+  is not a capability of the whole (which of the N — and what would "healthy"
+  even mean across the bundle?). So an orchestrator **advertises and resolves
+  only the capabilities it provides itself.** To offer an aggregate capability it
+  *implements* it — e.g. a `healthcheck` that iterates its **first-level** drivers
+  and combines their results the way that stack requires. It does not pass its
+  drivers' capabilities through. (Nesting still cascades: a registered driver
+  that is itself an orchestrator provides `healthcheck` too, so the call recurses
+  into its own first level via plain delegation.)
+
+The rule follows from the number of inner paths: one uniform path → pass through
+(transparent); many independent paths → own it or hide it (opaque). Either way
+the outside sees just an `MCSDriver`, and `detect ⟺ resolve` stays consistent.
+
 ## Reference implementation
 
 The Python SDK ships a reusable `BaseDecorator` in **`mcs-driver-core`**. It
 delegates every interface call to a single inner driver and resolves
-capabilities by searching inward — the one-inner counterpart to what the
-[Orchestrator](5_Orchestrator.md) does for many. A concrete decorator
+capabilities by searching inward. A concrete decorator
 (`AuthDecorator`, `PermissionDecorator`, …) subclasses it and overrides only
 the method it intercepts, usually `execute_tool`.
 
